@@ -2,7 +2,8 @@ services:
   web:
     build: ./apps/web
     environment:
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8001}
+      # Browser requests use the same-origin /api proxy; never expose the API port directly.
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -12,8 +13,6 @@ services:
   api:
     build: ./services/api
     env_file: .env
-    ports:
-      - "8001:8000"
     volumes:
       - ./data/ephemeris:/app/data/ephemeris:ro
     depends_on:

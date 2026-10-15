@@ -25,7 +25,7 @@ Copy-Item .env.example .env
 docker compose up --build
 ```
 
-Open `http://localhost:3000`. API docs are at `http://localhost:8001/docs`.
+Open `http://localhost:3000`. The API is intentionally private and is reached by the web app through its same-origin `/api` proxy; it is not published on a host port.
 
 For frontend-only iteration:
 

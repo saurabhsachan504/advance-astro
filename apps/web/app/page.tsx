@@ -5,7 +5,8 @@ import { FormEvent, useState } from "react";
 type Planet = { name: string; longitude: number; sign: string; nakshatra: string };
 type Chart = { ascendant: Planet; planets: Planet[]; provenance: { engine_version: string; ephemeris_version: string } };
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8001";
+// Same-origin proxy keeps the private API inside Docker's internal network.
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 
 export default function Home() {
   const [chart, setChart] = useState<Chart | null>(null);
@@ -20,7 +21,7 @@ export default function Home() {
       latitude: Number(form.get("latitude")), longitude: Number(form.get("longitude")), ayanamsa: "lahiri"
     };
     try {
-      const response = await fetch(`${API}/v1/charts/calculate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const response = await fetch(`${API}/api/v1/charts/calculate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!response.ok) throw new Error((await response.json()).detail || "Unable to calculate chart");
       setChart(await response.json()); setStatus("Chart calculated locally by the astronomy engine.");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Unknown error"); setStatus(""); }
