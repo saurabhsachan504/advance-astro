@@ -5,7 +5,8 @@ services:
       # Browser requests use the same-origin /api proxy; never expose the API port directly.
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
     ports:
-      - "3000:3000"
+      # aaPanel/Caddy/Nginx should proxy to this loopback-only port and terminate HTTPS.
+      - "127.0.0.1:3000:3000"
     depends_on:
       api:
         condition: service_started
