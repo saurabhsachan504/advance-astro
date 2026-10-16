@@ -1,13 +1,14 @@
 from datetime import datetime
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from .advanced import kundli, matchmaking, muhurat, panchang, vimshottari_dasha
 from .astrology import calculate_chart, calculate_multi_system
 from .config import get_settings
 from .database import Base, engine
 from .feedback import create_forecast, dispatch_due_followups, record_feedback
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
-from .schemas import ChartRequest, ChartResponse, FeedbackCreate, ForecastCreate, ForecastResponse, KnowledgeChunkCreate, KnowledgeSearch, UploadIntentRequest
+from .schemas import CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, UploadIntentRequest
 from .vision import interpret_symbolic_image
 
 settings = get_settings()
@@ -33,6 +34,41 @@ def calculate(request: ChartRequest) -> ChartResponse:
 def calculate_all_systems(request: ChartRequest) -> dict:
     try:
         return calculate_multi_system(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/dasha/vimshottari")
+def calculate_vimshottari_dasha(request: DashaRequest) -> dict:
+    try:
+        return vimshottari_dasha(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/kundli/interactive")
+def interactive_kundli(request: KundliRequest) -> dict:
+    try:
+        return kundli(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/matchmaking/analyse")
+def analyse_matchmaking(request: MatchmakingRequest) -> dict:
+    try:
+        return matchmaking(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/calendar/panchang")
+def daily_panchang(request: CalendarRequest) -> dict:
+    try:
+        return panchang(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/muhurat/plan")
+def plan_muhurat(request: MuhuratRequest) -> dict:
+    try:
+        return muhurat(request)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

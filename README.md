@@ -69,6 +69,18 @@ The dashboard includes a consent-gated Palm/Face upload flow and a forecast-feed
 
 The dashboard uses this route. These are calculations and interpretive frameworks, not evidence of guaranteed outcomes.
 
+## Advanced deterministic tools
+
+The local API also includes these no-LLM routes, and the web interface is available at `/advanced`:
+
+- `POST /v1/dasha/vimshottari` — Vimshottari Mahadasha and Antardasha timeline.
+- `POST /v1/kundli/interactive` — D1 whole-sign houses plus harmonic D9 and D10 data for North/South Indian UI layouts.
+- `POST /v1/matchmaking/analyse` — transparent baseline Ashtakoota, Manglik flags, Moon star/sub-lord comparison, and tropical synastry aspects.
+- `POST /v1/calendar/panchang` — Panchang facts, sunrise/sunset, Rahu Kaal, Choghadiya and next global eclipse events.
+- `POST /v1/muhurat/plan` — baseline event-specific Choghadiya windows excluding Rahu Kaal, for a maximum 31-day range.
+
+These calculations expose their rule assumptions. Local tradition, regional Panchang conventions, exceptions, and professional interpretation need additional rule packs before being used for consequential decisions.
+
 ## Private RAG knowledge base
 
 RAG is included as a private Qdrant-backed retrieval layer. It requires a local OpenAI-compatible embedding server; it never needs a public AI API.

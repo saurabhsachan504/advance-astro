@@ -4,6 +4,7 @@ import "./dual-insight.css";
 import "./systems.css";
 import "./navigation.css";
 import "./light-premium.css";
+import "./advanced/advanced.css";
 
 export const metadata: Metadata = {
   title: "Advance Astro",

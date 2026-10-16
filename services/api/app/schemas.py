@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
@@ -67,4 +67,39 @@ class KnowledgeChunkCreate(BaseModel):
 class KnowledgeSearch(BaseModel):
     query: str = Field(min_length=3, max_length=1000)
     limit: int = Field(default=5, ge=1, le=10)
+
+
+class DashaRequest(ChartRequest):
+    years: int = Field(default=20, ge=1, le=120)
+
+
+class CalendarRequest(BaseModel):
+    date: date
+    timezone: str = Field(min_length=3, max_length=64)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+
+class MuhuratRequest(CalendarRequest):
+    event: Literal["marriage", "business", "travel", "naming", "property_purchase"]
+    end_date: date | None = None
+
+    @field_validator("end_date")
+    @classmethod
+    def range_is_limited(cls, value: date | None, info):
+        start = info.data.get("date")
+        if value and start and not start <= value <= start.fromordinal(start.toordinal() + 31):
+            raise ValueError("end_date must be between date and 31 days after it")
+        return value
+
+
+class MatchmakingRequest(BaseModel):
+    person_a: ChartRequest
+    person_b: ChartRequest
+    person_a_label: str = Field(default="Person A", min_length=1, max_length=80)
+    person_b_label: str = Field(default="Person B", min_length=1, max_length=80)
+
+
+class KundliRequest(ChartRequest):
+    layout: Literal["north_indian", "south_indian"] = "north_indian"
 
