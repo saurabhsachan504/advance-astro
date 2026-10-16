@@ -6,7 +6,7 @@ Privacy-first, self-hosted astrology application starter. It combines determinis
 
 - Next.js dashboard with birth-details form, chart facts, dual-insight workflow, and privacy controls.
 - FastAPI backend with versioned routes, Pydantic validation, chart calculation, encrypted-field helpers, image lifecycle endpoints, and structured-report interface.
-- PostgreSQL, Redis, Qdrant, MinIO and optional vLLM services via Docker Compose.
+- PostgreSQL, Redis, Qdrant and optional vLLM services via Docker Compose.
 - Database initialization, local-only environment template, and a test suite for deterministic calculations.
 
 ## What you must provide before production
@@ -14,7 +14,7 @@ Privacy-first, self-hosted astrology application starter. It combines determinis
 1. A `.env` created from `.env.example`, with strong unique secrets.
 2. Swiss Ephemeris files in `data/ephemeris/` (or an explicitly documented package/data source).
 3. A commercially licensed knowledge corpus for retrieval; do not ingest copyrighted texts without permission.
-4. Validated palm/face models and a privacy/legal review. The supplied vision worker intentionally only performs image-quality and hand/face-presence checks; it does **not** claim to predict a future or recognise people.
+4. Validated palm/face models, an S3-compatible object-storage deployment, and a privacy/legal review. The supplied vision worker intentionally only performs image-quality and hand/face-presence checks; it does **not** claim to predict a future or recognise people.
 5. Authentication provider, HTTPS reverse proxy, backups, monitoring, and a security review.
 
 ## Local start
