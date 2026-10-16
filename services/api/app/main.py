@@ -1,12 +1,13 @@
 from datetime import datetime
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from .astrology import calculate_chart
+from .astrology import calculate_chart, calculate_multi_system
 from .config import get_settings
 from .database import Base, engine
 from .feedback import create_forecast, dispatch_due_followups, record_feedback
 from .privacy import create_upload_intent
-from .schemas import ChartRequest, ChartResponse, FeedbackCreate, ForecastCreate, ForecastResponse, UploadIntentRequest
+from .rag import ingest_chunk, retrieve
+from .schemas import ChartRequest, ChartResponse, FeedbackCreate, ForecastCreate, ForecastResponse, KnowledgeChunkCreate, KnowledgeSearch, UploadIntentRequest
 from .vision import interpret_symbolic_image
 
 settings = get_settings()
@@ -25,6 +26,13 @@ def health() -> dict[str, str]:
 def calculate(request: ChartRequest) -> ChartResponse:
     try:
         return calculate_chart(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/charts/multi")
+def calculate_all_systems(request: ChartRequest) -> dict:
+    try:
+        return calculate_multi_system(request, settings)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
@@ -61,4 +69,14 @@ async def send_followups(x_internal_token: str | None = Header(default=None)) ->
     if not settings.feedback_worker_secret or x_internal_token != settings.feedback_worker_secret:
         raise HTTPException(status_code=401, detail="Invalid internal worker token")
     return {"sent": await dispatch_due_followups(settings)}
+
+@app.post("/v1/knowledge/chunks")
+async def add_knowledge_chunk(request: KnowledgeChunkCreate, x_knowledge_secret: str | None = Header(default=None)) -> dict:
+    if not settings.knowledge_admin_secret or x_knowledge_secret != settings.knowledge_admin_secret:
+        raise HTTPException(status_code=401, detail="Invalid knowledge ingestion secret")
+    return {"id": await ingest_chunk(request.text, request.source, request.section, settings)}
+
+@app.post("/v1/knowledge/search")
+async def search_knowledge(request: KnowledgeSearch) -> dict:
+    return {"matches": await retrieve(request.query, request.limit, settings)}
 

@@ -59,3 +59,12 @@ class ForecastResponse(BaseModel):
     outcome: str | None
     model_config = {"from_attributes": True}
 
+class KnowledgeChunkCreate(BaseModel):
+    text: str = Field(min_length=30, max_length=12000)
+    source: str = Field(min_length=2, max_length=300)
+    section: str | None = Field(default=None, max_length=300)
+
+class KnowledgeSearch(BaseModel):
+    query: str = Field(min_length=3, max_length=1000)
+    limit: int = Field(default=5, ge=1, le=10)
+

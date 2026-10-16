@@ -6,7 +6,7 @@ Privacy-first, self-hosted astrology application starter. It combines determinis
 
 - Next.js dashboard with birth-details form, chart facts, dual-insight workflow, and privacy controls.
 - FastAPI backend with versioned routes, Pydantic validation, chart calculation, encrypted-field helpers, image lifecycle endpoints, and structured-report interface.
-- PostgreSQL, Redis, Qdrant and optional vLLM services via Docker Compose.
+- PostgreSQL, Redis, Qdrant and an optional local model server via Docker Compose.
 - Database initialization, local-only environment template, and a test suite for deterministic calculations.
 
 ## What you must provide before production
@@ -57,4 +57,25 @@ The dashboard includes a consent-gated Palm/Face upload flow and a forecast-feed
 - The API checks image quality, submits the image only to that configured local endpoint, and does not write the raw image to disk in this MVP. It never performs face recognition, identity matching, medical/demographic inference, or guaranteed predictions.
 - Forecast feedback is stored as rule-level evidence (`yes`, `no`, or `unsure`); it does not retrain mathematical chart calculations or justify accuracy guarantees.
 - To enable the optional Twilio WhatsApp dispatch worker, set all `TWILIO_*` values and `FEEDBACK_WORKER_SECRET`. Keep the dispatch endpoint private and invoke it from a trusted scheduler only.
+
+## Multi-system engine
+
+`POST /v1/charts/multi` calculates the same birth data through four transparent systems in one local request:
+
+- Vedic / Parashari: sidereal Lahiri planets, ascendant, signs and nakshatras.
+- KP: sidereal Placidus cusps and Vimshottari star-lord/sub-lord divisions.
+- Numerology: life-path, birthday and attitude numbers.
+- Western: tropical Placidus positions and major aspects.
+
+The dashboard uses this route. These are calculations and interpretive frameworks, not evidence of guaranteed outcomes.
+
+## Private RAG knowledge base
+
+RAG is included as a private Qdrant-backed retrieval layer. It requires a local OpenAI-compatible embedding server; it never needs a public AI API.
+
+1. Set `EMBEDDING_BASE_URL`, `EMBEDDING_MODEL`, and a strong `KNOWLEDGE_ADMIN_SECRET` in `.env`.
+2. Ingest only text that you wrote, own, or are licensed to use with `POST /v1/knowledge/chunks` and header `X-Knowledge-Secret`.
+3. Retrieve supporting passages with `POST /v1/knowledge/search`.
+
+This starter deliberately returns sources and passages rather than claiming that a language model's output is an astrological fact. Connect a local LLM only after you have selected, evaluated and documented a model.
 

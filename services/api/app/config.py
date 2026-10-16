@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     twilio_account_sid: str | None = None
     twilio_auth_token: str | None = None
     twilio_whatsapp_from: str | None = None
+    qdrant_url: str = "http://qdrant:6333"
+    embedding_base_url: str | None = None
+    embedding_model: str | None = None
+    embedding_api_key: str | None = None
+    knowledge_admin_secret: str | None = None
 
     @property
     def cors_origins(self) -> list[str]:

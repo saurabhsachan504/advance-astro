@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.astrology import calculate_chart
+from app.astrology import calculate_chart, calculate_multi_system
 from app.config import Settings
 from app.schemas import ChartRequest
 
@@ -12,4 +12,13 @@ def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     rahu = next(planet.longitude for planet in chart.planets if planet.name == "Rahu")
     ketu = next(planet.longitude for planet in chart.planets if planet.name == "Ketu")
     assert abs(((ketu - rahu) % 360) - 180) < 0.0001
+
+
+def test_multi_system_returns_all_four_calculation_frameworks(tmp_path):
+    request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
+    result = calculate_multi_system(request, Settings(ephemeris_path=tmp_path))
+    assert set(("vedic_parashari", "kp", "numerology", "western")).issubset(result)
+    assert len(result["kp"]["cusps"]) == 12
+    assert result["numerology"]["life_path"] == 11
+    assert result["western"]["zodiac"] == "Tropical"
 
