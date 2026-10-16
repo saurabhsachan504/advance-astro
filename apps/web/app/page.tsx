@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type Planet = { name: string; longitude: number; sign: string; nakshatra: string };
 type Chart = { ascendant: Planet; planets: Planet[]; provenance: { engine_version: string; ephemeris_version: string } };
@@ -26,6 +26,18 @@ export default function Home() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("veda-theme");
+    const nextTheme = saved === "light" || saved === "dark" ? saved : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    setTheme(nextTheme);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("veda-theme", theme);
+  }, [theme]);
 
   async function createChart(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setStatus(""); setLoading(true);
@@ -41,7 +53,7 @@ export default function Home() {
 
   return <main>
     <div className="sky-noise" aria-hidden="true"/>
-    <nav><a className="brand" href="#top"><span className="brand-mark"><Sparkle /></span><span>VEDA<span className="brand-light">/OS</span></span></a><div className="nav-center"><a href="#chart">Birth chart</a><a href="#insight">Dual insight <i>new</i></a><a href="#privacy">Privacy</a></div><div className="nav-actions"><span className="online"><i/> Engine online</span><button className="avatar" aria-label="Profile">VS</button></div></nav>
+    <nav><a className="brand" href="#top"><span className="brand-mark"><Sparkle /></span><span>VEDA<span className="brand-light">/OS</span></span></a><div className="nav-center"><a href="#chart">Birth chart</a><a href="#insight">Dual insight <i>new</i></a><a href="#privacy">Privacy</a></div><div className="nav-actions"><span className="online"><i/> Engine online</span><button className="theme-toggle" type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}><span>{theme === "dark" ? "☾" : "☼"}</span><i/></button><button className="avatar" aria-label="Profile">VS</button></div></nav>
     <section id="top" className="hero"><div className="hero-copy"><p className="kicker"><span><Sparkle /></span> PRIVATE ASTRO INTELLIGENCE</p><h1>Your universe,<br/><em>rendered precisely.</em></h1><p className="hero-text">A private observatory for the patterns written in your birth moment—built on astronomical math, not guesswork.</p><div className="hero-meta"><span><b>01</b> Exact ephemeris</span><span><b>02</b> Local-first data</span><span><b>03</b> Your language</span></div></div><div className="hero-object"><div className="horizon-label top-label">S I D E R E A L &nbsp; / &nbsp; L A H I R I</div><OrbitalChart chart={chart}/><div className="horizon-label bottom-label">{chart ? `${chart.ascendant.sign} RISING` : "A PERSONAL COSMOS"}</div><div className="corner-note">{chart ? "LIVE CHART" : "EST. 2026"}</div></div></section>
     <section className="dashboard"><form id="chart" className="birth-card glass-card" onSubmit={createChart}><div className="card-heading"><div><p className="section-index">01 — CREATE CHART</p><h2>Find your celestial<br/>blueprint.</h2></div><div className="moon-phase" aria-hidden="true"><span/></div></div><div className="form-rule"/><div className="field-grid"><label className="wide"><span>Birth date &amp; time</span><input required name="birth_datetime" type="datetime-local" defaultValue="1995-08-15T10:30" /></label><label><span>Latitude</span><input required name="latitude" type="number" step="any" defaultValue="28.6139" /></label><label><span>Longitude</span><input required name="longitude" type="number" step="any" defaultValue="77.2090" /></label><label className="wide"><span>IANA time zone</span><input required name="timezone" defaultValue="Asia/Kolkata" placeholder="Asia/Kolkata" /></label></div><button className="primary-button" type="submit" disabled={loading}>{loading ? "Calculating your sky…" : <><span>Reveal my chart</span><Arrow /></>}</button><p className="form-foot"><Lock/> Your birth data stays in your private workspace.</p>{status && <p className="message success">✦ {status}</p>}{error && <p className="message error">{error}</p>}</form>
       <aside id="insight" className="insight-card"><div className="card-orbit"><span>✦</span></div><p className="section-index">02 — DUAL INSIGHT</p><h2>One chart.<br/><em>Many signals.</em></h2><p>Pair chart mathematics with optional palm or face symbolism for a layered spiritual reading.</p><div className="insight-list"><div><span>01</span><b>Kundli facts</b><i>Exact</i></div><div><span>02</span><b>Visual symbolism</b><i>Optional</i></div><div><span>03</span><b>Cross-match</b><i>Interpretive</i></div></div><button type="button" className="text-link" disabled>Unlock after chart <Arrow /></button></aside></section>
