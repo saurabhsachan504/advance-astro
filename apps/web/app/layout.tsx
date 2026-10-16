@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import "./styles.css";
+import "./dual-insight.css";
+import "./systems.css";
+import "./navigation.css";
 
 export const metadata: Metadata = {
   title: "Advance Astro",

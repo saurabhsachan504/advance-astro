@@ -1,9 +1,6 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import "./dual-insight.css";
-import "./systems.css";
-import "./navigation.css";
 
 type Planet = { name: string; longitude: number; sign: string; nakshatra: string };
 type Chart = { ascendant: Planet; planets: Planet[] };
