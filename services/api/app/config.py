@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     engine_version: str = "0.1.0"
     max_upload_bytes: int = Field(default=10 * 1024 * 1024)
     image_retention_hours: int = 1
+    database_url: str = "sqlite:///./advance_astro.db"
+    vision_llm_base_url: str | None = None
+    vision_llm_model: str | None = None
+    vision_llm_api_key: str | None = None
+    feedback_worker_secret: str | None = None
+    twilio_account_sid: str | None = None
+    twilio_auth_token: str | None = None
+    twilio_whatsapp_from: str | None = None
 
     @property
     def cors_origins(self) -> list[str]:

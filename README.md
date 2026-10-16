@@ -47,5 +47,14 @@ pytest
 
 ## Safety and privacy
 
-The system separates deterministic astronomical facts from optional interpretations. Do not market visual analysis as medical, scientific, identity, personality, financial, legal, or guaranteed-future assessment. Raw images are designed to be deletable immediately after analysis. Never expose PostgreSQL, Redis, Qdrant, MinIO, or model-serving ports to the public internet.
+The system separates deterministic astronomical facts from optional interpretations. Do not market visual analysis as medical, scientific, identity, personality, financial, legal, or guaranteed-future assessment. Raw images are designed to be deletable immediately after analysis. Never expose PostgreSQL, Redis, Qdrant, object storage, or model-serving ports to the public internet.
+
+## Optional: local visual analysis and feedback memory
+
+The dashboard includes a consent-gated Palm/Face upload flow and a forecast-feedback workflow. Both are inactive until configured.
+
+- Run a local OpenAI-compatible vision endpoint (for example, a Qwen-VL/LLaVA serving stack) on the private Docker network and set `VISION_LLM_BASE_URL` plus `VISION_LLM_MODEL` in `.env`.
+- The API checks image quality, submits the image only to that configured local endpoint, and does not write the raw image to disk in this MVP. It never performs face recognition, identity matching, medical/demographic inference, or guaranteed predictions.
+- Forecast feedback is stored as rule-level evidence (`yes`, `no`, or `unsure`); it does not retrain mathematical chart calculations or justify accuracy guarantees.
+- To enable the optional Twilio WhatsApp dispatch worker, set all `TWILIO_*` values and `FEEDBACK_WORKER_SECRET`. Keep the dispatch endpoint private and invoke it from a trusted scheduler only.
 

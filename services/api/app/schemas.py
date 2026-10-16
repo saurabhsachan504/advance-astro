@@ -39,3 +39,23 @@ class UploadIntentRequest(BaseModel):
     consent_visual_analysis: bool
     retention: Literal["delete_after_analysis", "one_hour"] = "delete_after_analysis"
 
+class ForecastCreate(BaseModel):
+    profile_reference: str = Field(min_length=3, max_length=128)
+    prediction: str = Field(min_length=12, max_length=2000)
+    rule_key: str = Field(min_length=3, max_length=160)
+    due_at: datetime
+    contact_address: str | None = Field(default=None, max_length=255)
+
+class FeedbackCreate(BaseModel):
+    outcome: Literal["yes", "no", "unsure"]
+
+class ForecastResponse(BaseModel):
+    id: str
+    profile_reference: str
+    prediction: str
+    rule_key: str
+    due_at: datetime
+    status: str
+    outcome: str | None
+    model_config = {"from_attributes": True}
+
