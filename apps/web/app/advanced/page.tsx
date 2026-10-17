@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 type Result = Record<string, unknown>;
@@ -16,6 +16,9 @@ export default function AdvancedObservatory() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [event, setEvent] = useState("marriage");
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  useEffect(() => { const saved = window.localStorage.getItem("veda-theme"); setTheme(saved === "light" || saved === "dark" ? saved : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }, []);
+  useEffect(() => { document.documentElement.dataset.theme = theme; window.localStorage.setItem("veda-theme", theme); }, [theme]);
   const run = async (path: string, payload: Record<string, unknown>, label: string) => {
     setError(""); setLoading(true); setMode(label);
     try { const response = await fetch(`${API}/api/v1${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); const body = await response.text(); if (!response.ok) throw new Error(JSON.parse(body).detail || "Calculation unavailable"); setResult(JSON.parse(body)); } catch (reason) { setError(reason instanceof Error ? reason.message : "Calculation unavailable"); } finally { setLoading(false); }
@@ -33,7 +36,7 @@ export default function AdvancedObservatory() {
     const b = { birth_datetime: data.get("match_birth_datetime"), timezone: data.get("match_timezone"), latitude: Number(data.get("match_latitude")), longitude: Number(data.get("match_longitude")), ayanamsa: "lahiri" };
     return run("/matchmaking/analyse", { person_a: a, person_b: b, person_a_label: "Profile A", person_b_label: "Profile B" }, "match");
   };
-  return <main className="advanced-page"><header className="advanced-header"><a href="/" className="advanced-brand"><span>✦</span> VEDA/OS</a><div><a href="/">Birth chart</a><b>Advanced observatory</b></div></header>
+  return <main className="advanced-page"><header className="advanced-header"><a href="/" className="advanced-brand"><span>✦</span> VEDA/OS</a><div className="advanced-header-actions"><a href="/">Birth chart</a><b>Advanced observatory</b><a className="advanced-pro-link" href="/advanced/pro">Pro view →</a><button className="advanced-theme-toggle" type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label="Toggle colour theme">{theme === "dark" ? "☀ Light" : "☾ Dark"}</button></div></header>
     <section className="advanced-hero"><p>LOCAL ASTROLOGY TOOLKIT</p><h1>Time, pattern<br/><em>&amp; compatibility.</em></h1><span>All calculations run through your private Swiss Ephemeris backend. No cloud AI is required.</span></section>
     <form className="profile-console" onSubmit={(e: FormEvent<HTMLFormElement>) => { e.preventDefault(); runProfile("dasha")(e.currentTarget); }}><div className="console-title"><div><p>YOUR REFERENCE PROFILE</p><h2>Start with birth facts.</h2></div><small>01 / deterministic math</small></div><div className="advanced-fields"><label><span>Birth date &amp; time</span><input required name="birth_datetime" type="datetime-local" defaultValue="1995-08-15T10:30"/></label><label><span>Latitude</span><input required name="latitude" type="number" step="any" defaultValue="28.6139"/></label><label><span>Longitude</span><input required name="longitude" type="number" step="any" defaultValue="77.2090"/></label><label><span>Time zone</span><input required name="timezone" defaultValue="Asia/Kolkata"/></label></div>
       <div className="tool-grid"><button type="button" onClick={(e) => runProfile("dasha")((e.currentTarget.form as HTMLFormElement))}><b>01</b><strong>Vimshottari Dasha</strong><span>Maha + Antardasha timeline</span></button><button type="button" onClick={(e) => runProfile("kundli")((e.currentTarget.form as HTMLFormElement))}><b>02</b><strong>Interactive Kundli</strong><span>D1 houses, D9 &amp; D10 divisions</span></button><button type="button" onClick={(e) => runProfile("calendar")((e.currentTarget.form as HTMLFormElement))}><b>03</b><strong>Astro calendar</strong><span>Panchang, Rahu Kaal, Choghadiya</span></button><button type="button" onClick={(e) => runProfile("muhurat")((e.currentTarget.form as HTMLFormElement))}><b>04</b><strong>Muhurat planner</strong><span>Local favourable time windows</span></button></div><div className="event-picker"><span>Muhurat event</span>{["marriage", "business", "travel", "naming", "property_purchase"].map((item) => <button key={item} type="button" className={event === item ? "selected" : ""} onClick={() => setEvent(item)}>{item.replace("_", " ")}</button>)}</div>
