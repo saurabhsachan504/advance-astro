@@ -38,7 +38,16 @@ html:not([data-theme="light"]) .hero-meta b, html[data-theme="dark"] .hero-meta 
 html:not([data-theme="light"]) .hero-object::before, html[data-theme="dark"] .hero-object::before { background: radial-gradient(circle at 34% 27%, #ffcb83 0 3%, #d7733d 13%, #89533d 28%, #312d2d 51%, #171615 66%, transparent 73%); box-shadow: 0 0 0 1px rgba(255, 175, 105, .08), 0 30px 90px rgba(0,0,0,.46); }
 html:not([data-theme="light"]) .orbit, html[data-theme="dark"] .orbit { border-color: rgba(244, 181, 137, .25); }
 html:not([data-theme="light"]) .orbit-core, html[data-theme="dark"] .orbit-core { background: #201714; color: #ffd6a1; border-color: rgba(255, 177, 105, .72); box-shadow: 0 0 0 8px rgba(243, 135, 66, .06), 0 0 30px rgba(241, 123, 52, .35); }
-html:not([data-theme="light"]) .planet, html[data-theme="dark"] .planet { border-color: rgba(255, 239, 224, .62); background: #322824; }
+/* Orbital labels stay readable against every coloured planet surface. */
+html:not([data-theme="light"]) .planet, html[data-theme="dark"] .planet { width: 32px; height: 32px; border: 2px solid rgba(255, 241, 227, .82); background: #322824; color: #fffaf4; font: 700 9px/1 Inter, ui-sans-serif, system-ui, sans-serif; letter-spacing: -.02em; text-shadow: 0 1px 2px rgba(0, 0, 0, .62); box-shadow: 0 5px 14px rgba(0, 0, 0, .38), inset 0 1px rgba(255, 255, 255, .14); }
+html:not([data-theme="light"]) .planet b, html[data-theme="dark"] .planet b { color: inherit; font-weight: 800; }
+html:not([data-theme="light"]) .p-0, html[data-theme="dark"] .p-0 { background: #f2ae5d; color: #25150b; text-shadow: 0 1px rgba(255, 245, 219, .42); }
+html:not([data-theme="light"]) .p-1, html[data-theme="dark"] .p-1 { background: #cbdaf1; color: #14223a; text-shadow: 0 1px rgba(255, 255, 255, .55); }
+html:not([data-theme="light"]) .p-2, html[data-theme="dark"] .p-2 { background: #d96956; color: #fff8f1; }
+html:not([data-theme="light"]) .p-3, html[data-theme="dark"] .p-3 { background: #9e70d3; color: #fffaff; }
+html:not([data-theme="light"]) .p-4, html[data-theme="dark"] .p-4 { background: #50aa92; color: #f7fffb; }
+html:not([data-theme="light"]) .p-5, html[data-theme="dark"] .p-5 { background: #c96d7c; color: #fff9fa; }
+html:not([data-theme="light"]) .p-6, html[data-theme="dark"] .p-6 { background: #617aa9; color: #f7faff; }
 
 html:not([data-theme="light"]) .glass-card, html:not([data-theme="light"]) .insight-card, html[data-theme="dark"] .glass-card, html[data-theme="dark"] .insight-card { border-color: rgba(255, 233, 217, .11); box-shadow: 0 22px 55px rgba(0,0,0,.31), inset 0 1px rgba(255,255,255,.035); }
 html:not([data-theme="light"]) .birth-card, html[data-theme="dark"] .birth-card { background: linear-gradient(145deg, #211f1e, #181716 72%); }
