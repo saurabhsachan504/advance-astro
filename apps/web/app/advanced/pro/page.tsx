@@ -8,7 +8,7 @@ const localMoment = (timezone: string) => new Intl.DateTimeFormat("sv-SE", { tim
 const tools = [
   ["dasha", "Dasha timeline", "Maha and Antardasha periods"], ["kundli", "Kundli studio", "D1, D9 and D10 chart data"],
   ["calendar", "Astro calendar", "Panchang, Rahu Kaal and eclipse alerts"], ["muhurat", "Muhurat planner", "Event time-window baseline"],
-  ["gochar", "Live Gochar", "Current transits and Sade Sati phase"], ["strengths", "Strength lab", "House support and visible bala metrics"],
+  ["gochar", "Live Gochar", "Current transits and Sade Sati phase"], ["strengths", "Ashtakavarga lab", "Bhinna, Sarva and bala components"],
   ["prashna", "Prashna Kundli", "Question-time chart facts"], ["match", "Matchmaking", "Ashtakoota, KP and synastry"],
 ] as const;
 
@@ -36,7 +36,7 @@ export default function ProAdvancedTools() {
 
 function Result({ result, active }: { result: Data; active: string }) {
   if (active === "gochar") { const sade = result.sade_sati as { phase: string; natal_moon_sign: string; transit_saturn_sign: string }; const planets = result.planets as { name: string; sign: string; house_from_lagna: number; retrograde: boolean }[]; return <div className="pro-gochar"><article><b>{sade.phase}</b><span>Sade Sati status - natal Moon {sade.natal_moon_sign}, transit Saturn {sade.transit_saturn_sign}</span></article>{planets.map((planet) => <p key={planet.name}><b>{planet.name}</b><span>{planet.sign} / house {planet.house_from_lagna}</span><i>{planet.retrograde ? "retrograde" : "direct"}</i></p>)}</div>; }
-  if (active === "strengths") { const rows = result.shadbala_starter as { planet: string; starter_score: number; uchcha_bala: number; dig_bala: number }[]; return <div className="pro-strengths">{rows.map((row) => <article key={row.planet}><b>{row.planet}</b><strong>{row.starter_score}</strong><span>Uchcha {row.uchcha_bala} / Dig {row.dig_bala}</span></article>)}</div>; }
+  if (active === "strengths") { const rows = result.shadbala_components as { planet: string; component_score: number; components: { uchcha_bala: number; dig_bala: number } }[]; const sarva = result.sarvashtakavarga as { total: number; houses_from_lagna: { house: number; bindus: number }[] }; return <><div className="pro-strengths">{rows.map((row) => <article key={row.planet}><b>{row.planet}</b><strong>{row.component_score}</strong><span>Uchcha {row.components.uchcha_bala} / Dig {row.components.dig_bala}</span></article>)}</div><div className="ashta-strip"><b>Sarvashtakavarga</b><span>{sarva.houses_from_lagna.map((house) => <i key={house.house}>H{house.house}: {house.bindus}</i>)}</span><strong>Total {sarva.total}</strong></div></>; }
   if (active === "prashna") { const lagna = result.lagna as { sign: string; house: number }; const moon = result.moon as { sign: string; nakshatra: string }; const panchang = result.panchang as { nakshatra: string }; return <div className="pro-facts"><article><b>Lagna</b><strong>{lagna.sign}</strong><span>House {lagna.house}</span></article><article><b>Moon</b><strong>{moon.sign}</strong><span>{moon.nakshatra}</span></article><article><b>Moment Nakshatra</b><strong>{panchang.nakshatra}</strong><span>Question-time chart facts</span></article></div>; }
   return <pre className="pro-json">{JSON.stringify(result, null, 2)}</pre>;
 }

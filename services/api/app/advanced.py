@@ -187,32 +187,57 @@ def gochar(request: TransitRequest, settings: Settings) -> dict:
 
 
 EXALTATION = {"Sun": 10, "Moon": 33, "Mars": 298, "Mercury": 165, "Jupiter": 95, "Venus": 357, "Saturn": 200}
+NAISARGIKA_BALA = {"Sun": 60, "Moon": 51.43, "Mars": 17.14, "Mercury": 25.71, "Jupiter": 34.29, "Venus": 42.86, "Saturn": 8.57}
+DIG_DIRECTIONS = {"Sun": 10, "Mars": 10, "Moon": 4, "Venus": 4, "Jupiter": 1, "Mercury": 1, "Saturn": 7}
+MEAN_DAILY_MOTION = {"Sun": 0.9856, "Moon": 13.176, "Mars": 0.524, "Mercury": 1.383, "Jupiter": 0.083, "Venus": 1.2, "Saturn": 0.033}
+
+# Classical Bhinna-Ashtakavarga bindu rules. Each tuple is the house distance
+# (1-12) from the contributing body/Lagna that gives one bindu to the subject.
+BAV_RULES = {
+    "Sun": {"Sun": (1,2,4,7,8,9,10,11), "Moon": (3,6,10,11), "Mars": (1,2,4,7,8,9,10,11), "Mercury": (3,5,6,9,10,11), "Jupiter": (5,6,9,11), "Venus": (6,7,12), "Saturn": (1,2,4,7,8,9,10,11), "Lagna": (3,4,6,10,11)},
+    "Moon": {"Sun": (3,6,7,8,10,11), "Moon": (1,3,6,7,10,11), "Mars": (2,3,5,6,9,10,11), "Mercury": (1,3,4,5,7,8,10,11), "Jupiter": (1,4,7,8,10,11), "Venus": (3,4,5,7,9,10,11), "Saturn": (3,5,6,11), "Lagna": (3,6,10,11)},
+    "Mars": {"Sun": (3,5,6,10,11), "Moon": (3,6,11), "Mars": (1,2,4,7,8,10,11), "Mercury": (3,5,6,11), "Jupiter": (6,10,11,12), "Venus": (6,8,11,12), "Saturn": (1,4,7,8,9,10,11), "Lagna": (1,3,6,10,11)},
+    "Mercury": {"Sun": (5,6,9,11,12), "Moon": (2,4,6,8,10,11), "Mars": (1,2,4,7,8,9,10,11), "Mercury": (1,3,5,6,9,10,11,12), "Jupiter": (6,8,11,12), "Venus": (1,2,3,4,5,8,9,11), "Saturn": (1,2,4,7,8,9,10,11), "Lagna": (1,2,4,6,8,10,11)},
+    "Jupiter": {"Sun": (1,2,3,4,7,8,9,10,11), "Moon": (2,5,7,9,11), "Mars": (1,2,4,7,8,10,11), "Mercury": (1,2,4,5,6,9,10,11), "Jupiter": (1,2,3,4,7,8,10,11), "Venus": (2,5,6,9,10,11), "Saturn": (3,5,6,12), "Lagna": (1,2,4,5,6,7,9,10,11)},
+    "Venus": {"Sun": (8,11,12), "Moon": (1,2,3,4,5,8,9,11,12), "Mars": (3,5,6,9,11,12), "Mercury": (3,5,6,9,11), "Jupiter": (5,8,9,10,11), "Venus": (1,2,3,4,5,8,9,10,11), "Saturn": (3,4,5,8,9,10,11), "Lagna": (1,2,3,4,5,8,9,11)},
+    "Saturn": {"Sun": (1,2,4,7,8,10,11), "Moon": (3,6,11), "Mars": (3,5,6,10,11,12), "Mercury": (6,8,9,10,11,12), "Jupiter": (5,6,11,12), "Venus": (6,11,12), "Saturn": (3,5,6,11), "Lagna": (1,3,4,6,10,11)},
+}
 
 
 def strengths(request: ChartRequest, settings: Settings) -> dict:
-    """Transparent starter metrics. A complete classical Shadbala needs an expanded rule pack."""
+    """Bhinna/Sarvashtakavarga plus transparent, component-level strength factors."""
     _, jd = _utc_and_jd(request, settings)
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     asc = swe.houses_ex(jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
     flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
+    positions = {}
     rows = []
     for name, code in PLANETS.items():
         if name == "Rahu":
             continue
         values = swe.calc_ut(jd, code, flags)[0]
         longitude, speed = values[0] % 360, values[3]
+        positions[name] = longitude
         house = _whole_sign_house(longitude, asc)
         distance = min((longitude - EXALTATION[name]) % 360, (EXALTATION[name] - longitude) % 360)
         uchcha = round(max(0, 60 * (1 - distance / 180)), 2)
-        dig = 60 if house in {1, 4, 7, 10} else 30 if house in {2, 5, 8, 11} else 15
-        cheshta = 60 if speed > 0 else 35
-        rows.append({"planet": name, "house": house, "uchcha_bala": uchcha, "dig_bala": dig, "cheshta_bala": cheshta, "starter_score": round(uchcha + dig + cheshta, 2)})
-    house_points = []
-    for house in range(1, 13):
-        occupied = sum(1 for item in rows if item["house"] == house)
-        angular = 2 if house in {1, 4, 7, 10} else 0
-        house_points.append({"house": house, "support_points": min(8, 3 + occupied + angular), "occupied_by": [item["planet"] for item in rows if item["house"] == house]})
-    return {"shadbala_starter": rows, "sarvashtakavarga_starter": house_points, "notice": "These are visible starter metrics (exaltation, angular and motion components plus a house-support grid), not a full classical Shadbala/Bhinna-Ashtakavarga implementation."}
+        desired = DIG_DIRECTIONS[name]
+        direction_distance = min((house - desired) % 12, (desired - house) % 12)
+        dig = round(max(0, 60 - direction_distance * 10), 2)
+        kendra = 60 if house in {1, 4, 7, 10} else 30 if house in {2, 5, 8, 11} else 15
+        cheshta = round(min(60, abs(speed) / MEAN_DAILY_MOTION[name] * 30), 2)
+        rows.append({"planet": name, "house": house, "components": {"uchcha_bala": uchcha, "kendra_bala": kendra, "dig_bala": dig, "cheshta_motion_index": cheshta, "naisargika_bala": NAISARGIKA_BALA[name]}, "component_score": round(uchcha + kendra + dig + cheshta + NAISARGIKA_BALA[name], 2)})
+    positions["Lagna"] = asc
+    bav = {}
+    for subject, contributor_rules in BAV_RULES.items():
+        signs = []
+        for target in range(12):
+            bindus = sum(1 for contributor, allowed in contributor_rules.items() if ((target - int(positions[contributor] // 30)) % 12 + 1) in allowed)
+            signs.append(bindus)
+        bav[subject] = {"sign_bindus": signs, "total": sum(signs)}
+    sarva = [sum(bav[planet]["sign_bindus"][sign] for planet in BAV_RULES) for sign in range(12)]
+    houses = [{"house": number, "sign": SIGNS[(int(asc // 30) + number - 1) % 12], "bindus": sarva[(int(asc // 30) + number - 1) % 12]} for number in range(1, 13)]
+    return {"shadbala_components": rows, "bhinna_ashtakavarga": bav, "sarvashtakavarga": {"sign_bindus": sarva, "total": sum(sarva), "houses_from_lagna": houses}, "notice": "Bhinna and Sarvashtakavarga bindu tables are deterministic. Strength factors expose Uchcha, Kendra, Dig, motion and Naisargika components; full tradition-specific Shadbala additions (Kala, Drik, divisional and ayan-specific variants) require a selectable rule pack."}
 
 
 def prashna(request: PrashnaRequest, settings: Settings) -> dict:

@@ -86,7 +86,7 @@ These calculations expose their rule assumptions. Local tradition, regional Panc
 The `Advanced` navbar control opens `/advanced/pro`, which additionally exposes:
 
 - `POST /v1/gochar/live` for sidereal current transits, retrograde state, configured transit-to-natal aspects, and a Sade Sati phase indicator.
-- `POST /v1/strengths/calculate` for transparent starter Uchcha, Dig and Cheshta components plus a house-support grid. It is intentionally not marketed as a complete classical Shadbala/Bhinna-Ashtakavarga calculation.
+- `POST /v1/strengths/calculate` for deterministic Bhinna Ashtakavarga, Sarvashtakavarga house bindus, and transparent Uchcha/Kendra/Dig/motion/Naisargika strength components. Kala, Drik and tradition-specific Shadbala variants remain selectable-rule-pack work rather than hidden assumptions.
 - `POST /v1/prashna/calculate` for question-time chart facts and Panchang context.
 - `POST /v1/reports/chart.pdf` for a private, factual PDF of chart positions. It contains no AI interpretation.
 

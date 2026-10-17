@@ -7,6 +7,7 @@ import "./light-premium.css";
 import "./advanced/advanced.css";
 import "./advanced-link.css";
 import "./advanced/pro/pro.css";
+import "./ashtakavarga.css";
 
 export const metadata: Metadata = {
   title: "Advance Astro",

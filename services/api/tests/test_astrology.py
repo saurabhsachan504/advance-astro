@@ -38,7 +38,10 @@ def test_gochar_strengths_and_prashna_return_facts(tmp_path):
     settings = Settings(ephemeris_path=tmp_path)
     common = dict(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
     assert gochar(TransitRequest(**common), settings)["planets"]
-    assert strengths(ChartRequest(**common), settings)["shadbala_starter"]
+    strength = strengths(ChartRequest(**common), settings)
+    assert len(strength["shadbala_components"]) == 7
+    assert len(strength["sarvashtakavarga"]["houses_from_lagna"]) == 12
+    assert set(strength["bhinna_ashtakavarga"]) == {"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"}
     question = PrashnaRequest(question="What should I focus on?", question_datetime=datetime(2026, 10, 17, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
     assert prashna(question, settings)["lagna"]["name"] == "Ascendant"
 
