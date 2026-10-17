@@ -1,0 +1,48 @@
+/* Mobile hero proof points: three clearly separated, touch-friendly stat cards. */
+@media (max-width: 600px) {
+  .hero-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 24px;
+  }
+
+  .hero-meta span {
+    display: flex;
+    min-height: 69px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 8px;
+    border: 1px solid rgba(233, 185, 110, .20);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .035);
+    color: #d5cec4;
+    font-size: 8px;
+    font-weight: 720;
+    letter-spacing: .55px;
+    line-height: 1.35;
+  }
+
+  .hero-meta b {
+    margin: 0;
+    color: #ff9556;
+    font-size: 13px;
+    letter-spacing: 0;
+    line-height: 1;
+  }
+
+  html[data-theme="light"] .hero-meta span {
+    border-color: rgba(32, 50, 76, .16);
+    background: rgba(255, 254, 250, .78);
+    box-shadow: 0 6px 13px rgba(50, 58, 77, .07);
+    color: #344761;
+  }
+
+  html[data-theme="light"] .hero-meta b { color: #a85518; }
+}
+
+@media (max-width: 370px) {
+  .hero-meta { gap: 5px; }
+  .hero-meta span { min-height: 65px; padding: 8px 6px; font-size: 7px; letter-spacing: .35px; }
+}
