@@ -6,6 +6,7 @@ import "./navigation.css";
 import "./light-premium.css";
 import "./advanced/advanced.css";
 import "./advanced-link.css";
+import "./advanced/pro/pro.css";
 
 export const metadata: Metadata = {
   title: "Advance Astro",

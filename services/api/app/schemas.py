@@ -103,3 +103,19 @@ class MatchmakingRequest(BaseModel):
 class KundliRequest(ChartRequest):
     layout: Literal["north_indian", "south_indian"] = "north_indian"
 
+
+class TransitRequest(ChartRequest):
+    transit_datetime: datetime | None = None
+
+
+class PrashnaRequest(BaseModel):
+    question: str = Field(min_length=3, max_length=1000)
+    question_datetime: datetime
+    timezone: str = Field(min_length=3, max_length=64)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+
+class ReportRequest(ChartRequest):
+    report_title: str = Field(default="Advance Astro Chart Report", min_length=3, max_length=100)
+

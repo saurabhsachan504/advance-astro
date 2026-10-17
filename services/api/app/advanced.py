@@ -22,7 +22,7 @@ from .astrology import (
     _utc_and_jd,
 )
 from .config import Settings
-from .schemas import CalendarRequest, ChartRequest, DashaRequest, KundliRequest, MatchmakingRequest, MuhuratRequest
+from .schemas import CalendarRequest, ChartRequest, DashaRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest
 
 NAKSHATRA_SPAN = 360 / 27
 DASHA_YEAR_DAYS = 365.2425
@@ -148,6 +148,79 @@ def vimshottari_dasha(request: DashaRequest, settings: Settings) -> dict:
         remaining_years -= years
         cursor, index, first = end, (index + 1) % 9, False
     return {"moon": {"longitude": round(moon, 6), "nakshatra": NAKSHATRAS[nak_index], "birth_dasha_lord": VIMSHOTTARI_LORDS[start_lord_index], "elapsed_fraction": round(elapsed, 8)}, "year_basis_days": DASHA_YEAR_DAYS, "periods": periods, "notice": "Timeline is deterministic from the selected Vimshottari year basis; interpretations remain optional."}
+
+
+def _at_datetime_jd(value: datetime, timezone: str, settings: Settings) -> float:
+    local = value.replace(tzinfo=ZoneInfo(timezone))
+    utc = local.astimezone(ZoneInfo("UTC"))
+    swe.set_ephe_path(str(settings.ephemeris_path))
+    return swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute / 60 + utc.second / 3600)
+
+
+def gochar(request: TransitRequest, settings: Settings) -> dict:
+    """Compare current sidereal planets to natal positions, without interpretation claims."""
+    _, natal_jd = _utc_and_jd(request, settings)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    moment = request.transit_datetime or datetime.now(ZoneInfo(request.timezone)).replace(tzinfo=None)
+    transit_jd = _at_datetime_jd(moment, request.timezone, settings)
+    natal = _positions(natal_jd, True)
+    transit = _positions(transit_jd, True)
+    natal_asc = swe.houses_ex(natal_jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
+    rows = []
+    for body in transit:
+        code = PLANETS.get(body.name)
+        speed = swe.calc_ut(transit_jd, code, flags)[0][3] if code is not None else 0
+        rows.append({"name": body.name, "longitude": body.longitude, "sign": body.sign, "house_from_lagna": _whole_sign_house(body.longitude, natal_asc), "retrograde": speed < 0, "natal_sign": next(item.sign for item in natal if item.name == body.name)})
+    natal_moon = next(item for item in natal if item.name == "Moon")
+    transit_saturn = next(item for item in transit if item.name == "Saturn")
+    moon_sign, saturn_sign = int(natal_moon.longitude // 30), int(transit_saturn.longitude // 30)
+    sade_phase = {11: "Rising phase", 0: "Peak phase", 1: "Setting phase"}.get((saturn_sign - moon_sign) % 12, "Outside Sade Sati")
+    contacts = []
+    for moving in transit:
+        for birth in natal:
+            separation = min(abs(moving.longitude - birth.longitude) % 360, 360 - (abs(moving.longitude - birth.longitude) % 360))
+            for name, angle, orb in [("conjunction", 0, 4), ("square", 90, 4), ("trine", 120, 4), ("opposition", 180, 4)]:
+                if abs(separation - angle) <= orb:
+                    contacts.append({"transit": moving.name, "natal": birth.name, "aspect": name, "orb": round(abs(separation - angle), 2)})
+    return {"transit_local_datetime": moment.replace(tzinfo=ZoneInfo(request.timezone)).isoformat(), "ayanamsa": "Lahiri", "planets": rows, "sade_sati": {"natal_moon_sign": natal_moon.sign, "transit_saturn_sign": transit_saturn.sign, "phase": sade_phase}, "major_contacts": contacts, "notice": "Gochar shows astronomical positions and configured aspect geometry; it does not guarantee outcomes."}
+
+
+EXALTATION = {"Sun": 10, "Moon": 33, "Mars": 298, "Mercury": 165, "Jupiter": 95, "Venus": 357, "Saturn": 200}
+
+
+def strengths(request: ChartRequest, settings: Settings) -> dict:
+    """Transparent starter metrics. A complete classical Shadbala needs an expanded rule pack."""
+    _, jd = _utc_and_jd(request, settings)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    asc = swe.houses_ex(jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
+    rows = []
+    for name, code in PLANETS.items():
+        if name == "Rahu":
+            continue
+        values = swe.calc_ut(jd, code, flags)[0]
+        longitude, speed = values[0] % 360, values[3]
+        house = _whole_sign_house(longitude, asc)
+        distance = min((longitude - EXALTATION[name]) % 360, (EXALTATION[name] - longitude) % 360)
+        uchcha = round(max(0, 60 * (1 - distance / 180)), 2)
+        dig = 60 if house in {1, 4, 7, 10} else 30 if house in {2, 5, 8, 11} else 15
+        cheshta = 60 if speed > 0 else 35
+        rows.append({"planet": name, "house": house, "uchcha_bala": uchcha, "dig_bala": dig, "cheshta_bala": cheshta, "starter_score": round(uchcha + dig + cheshta, 2)})
+    house_points = []
+    for house in range(1, 13):
+        occupied = sum(1 for item in rows if item["house"] == house)
+        angular = 2 if house in {1, 4, 7, 10} else 0
+        house_points.append({"house": house, "support_points": min(8, 3 + occupied + angular), "occupied_by": [item["planet"] for item in rows if item["house"] == house]})
+    return {"shadbala_starter": rows, "sarvashtakavarga_starter": house_points, "notice": "These are visible starter metrics (exaltation, angular and motion components plus a house-support grid), not a full classical Shadbala/Bhinna-Ashtakavarga implementation."}
+
+
+def prashna(request: PrashnaRequest, settings: Settings) -> dict:
+    chart_request = ChartRequest(birth_datetime=request.question_datetime, timezone=request.timezone, latitude=request.latitude, longitude=request.longitude)
+    chart = kundli(KundliRequest(**chart_request.model_dump()), settings)
+    calendar = panchang(CalendarRequest(date=request.question_datetime.date(), timezone=request.timezone, latitude=request.latitude, longitude=request.longitude))
+    moon = next(item for item in chart["bodies"] if item["name"] == "Moon")
+    return {"question": request.question, "question_datetime": request.question_datetime.replace(tzinfo=ZoneInfo(request.timezone)).isoformat(), "lagna": chart["bodies"][0], "moon": moon, "panchang": {"tithi": calendar["tithi"], "nakshatra": calendar["nakshatra"], "rahu_kaal": calendar["rahu_kaal"]}, "houses": chart["houses"], "notice": "Prashna chart facts are generated at the supplied moment and location. A trained practitioner should apply the interpretive rules."}
 
 
 def _whole_sign_house(longitude: float, ascendant: float) -> int:

@@ -81,6 +81,15 @@ The local API also includes these no-LLM routes, and the web interface is availa
 
 These calculations expose their rule assumptions. Local tradition, regional Panchang conventions, exceptions, and professional interpretation need additional rule packs before being used for consequential decisions.
 
+## Extended advanced toolkit
+
+The `Advanced` navbar control opens `/advanced/pro`, which additionally exposes:
+
+- `POST /v1/gochar/live` for sidereal current transits, retrograde state, configured transit-to-natal aspects, and a Sade Sati phase indicator.
+- `POST /v1/strengths/calculate` for transparent starter Uchcha, Dig and Cheshta components plus a house-support grid. It is intentionally not marketed as a complete classical Shadbala/Bhinna-Ashtakavarga calculation.
+- `POST /v1/prashna/calculate` for question-time chart facts and Panchang context.
+- `POST /v1/reports/chart.pdf` for a private, factual PDF of chart positions. It contains no AI interpretation.
+
 ## Private RAG knowledge base
 
 RAG is included as a private Qdrant-backed retrieval layer. It requires a local OpenAI-compatible embedding server; it never needs a public AI API.

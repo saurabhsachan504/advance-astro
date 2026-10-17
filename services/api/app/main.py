@@ -1,14 +1,16 @@
 from datetime import datetime
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from .advanced import kundli, matchmaking, muhurat, panchang, vimshottari_dasha
+from fastapi.responses import StreamingResponse
+from .advanced import gochar, kundli, matchmaking, muhurat, panchang, prashna, strengths, vimshottari_dasha
 from .astrology import calculate_chart, calculate_multi_system
 from .config import get_settings
 from .database import Base, engine
 from .feedback import create_forecast, dispatch_due_followups, record_feedback
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
-from .schemas import CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, UploadIntentRequest
+from .reports import chart_report
+from .schemas import CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, ReportRequest, TransitRequest, UploadIntentRequest
 from .vision import interpret_symbolic_image
 
 settings = get_settings()
@@ -71,6 +73,35 @@ def plan_muhurat(request: MuhuratRequest) -> dict:
         return muhurat(request)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/gochar/live")
+def live_gochar(request: TransitRequest) -> dict:
+    try:
+        return gochar(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/strengths/calculate")
+def calculate_strengths(request: ChartRequest) -> dict:
+    try:
+        return strengths(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/prashna/calculate")
+def calculate_prashna(request: PrashnaRequest) -> dict:
+    try:
+        return prashna(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/reports/chart.pdf")
+def download_chart_report(request: ReportRequest) -> StreamingResponse:
+    try:
+        report = chart_report(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return StreamingResponse(iter([report]), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=advance-astro-chart.pdf"})
 
 @app.post("/v1/uploads/intents")
 def upload_intent(request: UploadIntentRequest) -> dict:
