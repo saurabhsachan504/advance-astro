@@ -22,7 +22,7 @@ from .astrology import (
     _utc_and_jd,
 )
 from .config import Settings
-from .schemas import CalendarRequest, ChartRequest, DashaRequest, JaiminiRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from .schemas import CalendarRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 NAKSHATRA_SPAN = 360 / 27
 DASHA_YEAR_DAYS = 365.2425
@@ -341,6 +341,78 @@ def gochar(request: TransitRequest, settings: Settings) -> dict:
                 if abs(separation - angle) <= orb:
                     contacts.append({"transit": moving.name, "natal": birth.name, "aspect": name, "orb": round(abs(separation - angle), 2)})
     return {"transit_local_datetime": moment.replace(tzinfo=ZoneInfo(request.timezone)).isoformat(), "ayanamsa": "Lahiri", "planets": rows, "sade_sati": {"natal_moon_sign": natal_moon.sign, "transit_saturn_sign": transit_saturn.sign, "phase": sade_phase}, "major_contacts": contacts, "notice": "Gochar shows astronomical positions and configured aspect geometry; it does not guarantee outcomes."}
+
+
+def gochar_dashboard(request: GocharDashboardRequest, settings: Settings) -> dict:
+    """Return a profile-based transit workspace for the next 7 or 30 local days.
+
+    Ingresses are found in six-hour local-time scans.  This keeps the dashboard
+    responsive while making the time precision explicit rather than claiming an
+    exact ingress minute.
+    """
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    moment = request.transit_datetime or datetime.now(ZoneInfo(request.timezone)).replace(tzinfo=None)
+    current_request = request.model_copy(update={"transit_datetime": moment})
+    current = gochar(current_request, settings)
+    natal_moon_sign = str(current["sade_sati"]["natal_moon_sign"])
+    natal_moon_index = SIGNS.index(natal_moon_sign)
+    _, natal_jd = _utc_and_jd(request, settings)
+    natal_asc = swe.houses_ex(natal_jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
+
+    def positions_at(local_time: datetime) -> dict[str, object]:
+        return {body.name: body for body in _positions(_at_datetime_jd(local_time, request.timezone, settings), True)}
+
+    daily_overview = []
+    for offset in range(request.range_days):
+        day_time = (moment + timedelta(days=offset)).replace(hour=12, minute=0, second=0, microsecond=0)
+        positions = positions_at(day_time)
+        moon = positions["Moon"]
+        saturn = positions["Saturn"]
+        saturn_index = int(saturn.longitude // 30)
+        phase = {11: "Rising phase", 0: "Peak phase", 1: "Setting phase"}.get((saturn_index - natal_moon_index) % 12, "Outside Sade Sati")
+        daily_overview.append({
+            "date": day_time.date().isoformat(),
+            "moon_sign": moon.sign,
+            "moon_house_from_lagna": _whole_sign_house(moon.longitude, natal_asc),
+            "saturn_sign": saturn.sign,
+            "sade_sati_phase": phase,
+        })
+
+    # A six-hour scan safely catches the Moon's sign changes and is transparent
+    # about its precision. Each event is the first scan point after the ingress.
+    previous = positions_at(moment)
+    ingresses = []
+    scan_time = moment
+    for _ in range(request.range_days * 4):
+        scan_time += timedelta(hours=6)
+        next_positions = positions_at(scan_time)
+        for name, body in next_positions.items():
+            before = previous[name]
+            if body.sign != before.sign:
+                ingresses.append({
+                    "planet": name,
+                    "from_sign": before.sign,
+                    "to_sign": body.sign,
+                    "detected_local_datetime": scan_time.replace(tzinfo=ZoneInfo(request.timezone)).isoformat(),
+                })
+        previous = next_positions
+    ingresses.sort(key=lambda event: str(event["detected_local_datetime"]))
+
+    retrograde_planets = [
+        {"name": planet["name"], "sign": planet["sign"], "speed_longitude_deg_day": planet["speed_longitude_deg_day"]}
+        for planet in current["planets"]
+        if planet["retrograde"]
+    ]
+    return {
+        "range_days": request.range_days,
+        "range_start": moment.date().isoformat(),
+        "current": current,
+        "retrograde_planets": retrograde_planets,
+        "daily_overview": daily_overview,
+        "upcoming_ingresses": ingresses,
+        "ingress_precision": "First six-hour local scan after a sign change; not an exact ingress minute.",
+        "notice": "This dashboard reports calculated sidereal positions and configured geometry only. It does not guarantee outcomes.",
+    }
 
 
 EXALTATION = {"Sun": 10, "Moon": 33, "Mars": 298, "Mercury": 165, "Jupiter": 95, "Venus": 357, "Saturn": 200}

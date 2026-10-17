@@ -116,6 +116,10 @@ class TransitRequest(ChartRequest):
     transit_datetime: datetime | None = None
 
 
+class GocharDashboardRequest(TransitRequest):
+    range_days: Literal[7, 30] = 7
+
+
 class PrashnaRequest(BaseModel):
     question: str = Field(min_length=3, max_length=1000)
     question_datetime: datetime

@@ -1,8 +1,8 @@
 from datetime import datetime
 from app.astrology import calculate_chart, calculate_multi_system
-from app.advanced import BAV_EXPECTED_TOTALS, gochar, jaimini, kundli, prashna, strengths, varshaphal, vimshottari_dasha
+from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kundli, prashna, strengths, varshaphal, vimshottari_dasha
 from app.config import Settings
-from app.schemas import ChartRequest, DashaRequest, JaiminiRequest, KundliRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from app.schemas import ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -74,4 +74,17 @@ def test_varshaphal_returns_solar_return_tajika_and_mudda_timeline(tmp_path):
     assert result["varshesha"]["planet"]
     assert result["mudda_dasha"]
     assert "Lahiri sidereal Sun longitude return" in result["rule_pack"]["varsha_pravesh"]
+
+
+def test_personal_gochar_dashboard_returns_daily_and_ingress_views(tmp_path):
+    request = GocharDashboardRequest(
+        birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090,
+        transit_datetime=datetime(2026, 10, 17, 10, 30), range_days=7,
+    )
+    result = gochar_dashboard(request, Settings(ephemeris_path=tmp_path))
+    assert result["range_days"] == 7
+    assert len(result["daily_overview"]) == 7
+    assert result["current"]["sade_sati"]["phase"]
+    assert all("moon_sign" in day and "sade_sati_phase" in day for day in result["daily_overview"])
+    assert all({"planet", "from_sign", "to_sign", "detected_local_datetime"}.issubset(event) for event in result["upcoming_ingresses"])
 
