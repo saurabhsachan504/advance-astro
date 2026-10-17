@@ -22,7 +22,7 @@ from .astrology import (
     _utc_and_jd,
 )
 from .config import Settings
-from .schemas import CalendarRequest, ChartRequest, DashaRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest
+from .schemas import CalendarRequest, ChartRequest, DashaRequest, JaiminiRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest
 
 NAKSHATRA_SPAN = 360 / 27
 DASHA_YEAR_DAYS = 365.2425
@@ -44,6 +44,75 @@ EVENT_FAVOURABLE = {
     "naming": {"Amrit", "Shubh", "Labh"},
     "property_purchase": {"Amrit", "Shubh", "Labh"},
 }
+
+CHARA_KARAKAS = ["Atmakaraka", "Amatyakaraka", "Bhratrikaraka", "Matrikaraka", "Putrakaraka", "Gnatikaraka", "Darakaraka"]
+SIGN_LORDS = {"Aries": "Mars", "Taurus": "Venus", "Gemini": "Mercury", "Cancer": "Moon", "Leo": "Sun", "Virgo": "Mercury", "Libra": "Venus", "Scorpio": "Mars", "Sagittarius": "Jupiter", "Capricorn": "Saturn", "Aquarius": "Saturn", "Pisces": "Jupiter"}
+
+
+def _navamsa_sign(longitude: float) -> tuple[int, int]:
+    """Classical D9 sign start rules for movable, fixed and dual signs."""
+    sign = int(longitude % 360 // 30)
+    part = min(8, int((longitude % 30) / (30 / 9)))
+    start = sign if sign % 3 == 0 else (sign + 8) % 12 if sign % 3 == 1 else (sign + 4) % 12
+    return (start + part) % 12, part + 1
+
+
+def _jaimini_aspected_signs(sign: int) -> list[int]:
+    movable, fixed, dual = {0, 3, 6, 9}, {1, 4, 7, 10}, {2, 5, 8, 11}
+    if sign in movable:
+        return sorted(fixed - {(sign + 1) % 12})
+    if sign in fixed:
+        return sorted(movable - {(sign - 1) % 12})
+    return sorted(dual - {sign})
+
+
+def jaimini(request: JaiminiRequest, settings: Settings) -> dict:
+    """Return transparent Jaimini sign-based facts using a seven-karaka rule pack."""
+    _, jd = _utc_and_jd(request, settings)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    ascendant = swe.houses_ex(jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
+    planets = _positions(jd, True)
+    position = {planet.name: planet.longitude for planet in planets}
+    karaka_planets = [planet for planet in planets if planet.name in {"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"}]
+    ranked = sorted(karaka_planets, key=lambda planet: (planet.longitude % 30, planet.longitude), reverse=True)
+    karakas = [{"karaka": CHARA_KARAKAS[index], "planet": planet.name, "sign": planet.sign, "longitude": round(planet.longitude, 6), "degrees_in_sign": round(planet.longitude % 30, 6)} for index, planet in enumerate(ranked)]
+    atmakaraka = ranked[0]
+    karakamsha_index, navamsa_part = _navamsa_sign(atmakaraka.longitude)
+    asc_sign = int(ascendant // 30)
+    asc_sign_name = SIGNS[asc_sign]
+    lagna_lord = SIGN_LORDS[asc_sign_name]
+    lord_sign = int(position[lagna_lord] // 30)
+    arudha_index = (lord_sign + (lord_sign - asc_sign) % 12) % 12
+    if arudha_index in {asc_sign, (asc_sign + 6) % 12}:
+        arudha_index = (arudha_index + 9) % 12
+    sign_planets: dict[int, list[str]] = {index: [] for index in range(12)}
+    for planet in planets:
+        sign_planets[int(planet.longitude // 30)].append(planet.name)
+    aspects = [{"from_sign": SIGNS[sign], "aspected_signs": [SIGNS[target] for target in _jaimini_aspected_signs(sign)], "aspecting_planets": names, "receiving_planets": [planet for target in _jaimini_aspected_signs(sign) for planet in sign_planets[target]]} for sign, names in sign_planets.items() if names]
+    direction = 1 if asc_sign % 2 == 0 else -1
+    cursor = request.birth_datetime.replace(tzinfo=ZoneInfo(request.timezone))
+    periods = []
+    elapsed_years = 0.0
+    for offset in range(12):
+        sign = (asc_sign + direction * offset) % 12
+        lord = SIGN_LORDS[SIGNS[sign]]
+        lord_position_sign = int(position[lord] // 30)
+        distance = (lord_position_sign - sign) % 12 if direction == 1 else (sign - lord_position_sign) % 12
+        years = 12 if distance == 0 else distance
+        start, end = cursor, cursor + timedelta(days=years * DASHA_YEAR_DAYS)
+        periods.append({"sign": SIGNS[sign], "lord": lord, "years": years, "start": start.isoformat(), "end": end.isoformat()})
+        cursor, elapsed_years = end, elapsed_years + years
+        if elapsed_years >= request.years:
+            break
+    return {
+        "ayanamsa": "Lahiri", "chara_karakas": karakas,
+        "karakamsha": {"atmakaraka": atmakaraka.name, "sign": SIGNS[karakamsha_index], "navamsa_part": navamsa_part, "method": "Atmakaraka placed by classical D9 sign-start rules"},
+        "arudha_lagna": {"sign": SIGNS[arudha_index], "lagna_sign": asc_sign_name, "lord": lagna_lord, "lord_sign": SIGNS[lord_sign], "method": "Count Lagna to its sign lord and the same distance onward; apply the 1st/7th exception to the 10th."},
+        "jaimini_aspects": aspects,
+        "chara_dasha_periods": periods,
+        "rule_pack": {"chara_karakas": "Seven-karaka system; Rahu is excluded.", "jaimini_aspects": "Movable signs aspect non-adjacent fixed signs; fixed signs aspect non-adjacent movable signs; dual signs aspect other dual signs.", "chara_dasha": "Baseline sign-dasha sequence starts from Lagna. Odd-sign Lagnas progress zodiacally and even-sign Lagnas reverse; each sign duration is the directional distance to its classical sign lord (same-sign lord = 12 years)."},
+        "notice": "Jaimini systems have lineage-specific variants. This factual rule pack displays its selected rules and should be reviewed against the user's tradition before professional use.",
+    }
 
 
 def _date_to_jd(day: date, timezone: str) -> float:

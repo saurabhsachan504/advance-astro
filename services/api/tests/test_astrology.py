@@ -1,8 +1,8 @@
 from datetime import datetime
 from app.astrology import calculate_chart, calculate_multi_system
-from app.advanced import BAV_EXPECTED_TOTALS, gochar, kundli, prashna, strengths, vimshottari_dasha
+from app.advanced import BAV_EXPECTED_TOTALS, gochar, jaimini, kundli, prashna, strengths, vimshottari_dasha
 from app.config import Settings
-from app.schemas import ChartRequest, DashaRequest, KundliRequest, PrashnaRequest, TransitRequest
+from app.schemas import ChartRequest, DashaRequest, JaiminiRequest, KundliRequest, PrashnaRequest, TransitRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -51,4 +51,16 @@ def test_gochar_strengths_and_prashna_return_facts(tmp_path):
     assert any(row["components"]["cheshta_motion_index"] > 0 for row in strength["shadbala_components"])
     question = PrashnaRequest(question="What should I focus on?", question_datetime=datetime(2026, 10, 17, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
     assert prashna(question, settings)["lagna"]["name"] == "Ascendant"
+
+
+def test_jaimini_engine_returns_transparent_rule_pack(tmp_path):
+    request = JaiminiRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090, years=72)
+    result = jaimini(request, Settings(ephemeris_path=tmp_path))
+    assert [row["karaka"] for row in result["chara_karakas"]] == ["Atmakaraka", "Amatyakaraka", "Bhratrikaraka", "Matrikaraka", "Putrakaraka", "Gnatikaraka", "Darakaraka"]
+    assert len(result["chara_karakas"]) == 7
+    assert result["karakamsha"]["atmakaraka"] == result["chara_karakas"][0]["planet"]
+    assert result["arudha_lagna"]["sign"] in {"Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"}
+    assert result["jaimini_aspects"]
+    assert result["chara_dasha_periods"]
+    assert "Seven-karaka" in result["rule_pack"]["chara_karakas"]
 
