@@ -22,7 +22,7 @@ from .astrology import (
     _utc_and_jd,
 )
 from .config import Settings
-from .schemas import CalendarRequest, ChartRequest, DashaRequest, JaiminiRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest
+from .schemas import CalendarRequest, ChartRequest, DashaRequest, JaiminiRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 NAKSHATRA_SPAN = 360 / 27
 DASHA_YEAR_DAYS = 365.2425
@@ -112,6 +112,90 @@ def jaimini(request: JaiminiRequest, settings: Settings) -> dict:
         "chara_dasha_periods": periods,
         "rule_pack": {"chara_karakas": "Seven-karaka system; Rahu is excluded.", "jaimini_aspects": "Movable signs aspect non-adjacent fixed signs; fixed signs aspect non-adjacent movable signs; dual signs aspect other dual signs.", "chara_dasha": "Baseline sign-dasha sequence starts from Lagna. Odd-sign Lagnas progress zodiacally and even-sign Lagnas reverse; each sign duration is the directional distance to its classical sign lord (same-sign lord = 12 years)."},
         "notice": "Jaimini systems have lineage-specific variants. This factual rule pack displays its selected rules and should be reviewed against the user's tradition before professional use.",
+    }
+
+
+def _wrap_angle(value: float) -> float:
+    return (value + 180) % 360 - 180
+
+
+def _solar_return_jd(request: VarshaphalRequest, settings: Settings, natal_sun: float, target_year: int) -> float:
+    """Solve the Lahiri sidereal Sun return near the native calendar anniversary."""
+    try:
+        anniversary = request.birth_datetime.replace(year=target_year)
+    except ValueError:  # Feb 29 profiles return on Feb 28 in non-leap years.
+        anniversary = request.birth_datetime.replace(year=target_year, month=2, day=28)
+    jd = _at_datetime_jd(anniversary, request.timezone, settings)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
+    for _ in range(8):
+        values = swe.calc_ut(jd, swe.SUN, flags)[0]
+        difference = _wrap_angle(values[0] - natal_sun)
+        speed = values[3]
+        if abs(difference) < 0.00001 or abs(speed) < 0.00001:
+            break
+        jd -= difference / speed
+    return jd
+
+
+def _mudda_dasha(request: VarshaphalRequest, settings: Settings, start: datetime, end: datetime, natal_moon: float) -> list[dict]:
+    nak_index = int(natal_moon // NAKSHATRA_SPAN)
+    elapsed = (natal_moon % NAKSHATRA_SPAN) / NAKSHATRA_SPAN
+    lord_index, first, cursor = nak_index % 9, True, start
+    periods = []
+    while cursor < end:
+        proportion = VIMSHOTTARI_YEARS[lord_index] / 120
+        days = DASHA_YEAR_DAYS * proportion * (1 - elapsed if first else 1)
+        period_end = min(end, cursor + timedelta(days=days))
+        periods.append({"lord": VIMSHOTTARI_LORDS[lord_index], "start": cursor.isoformat(), "end": period_end.isoformat(), "days": round((period_end - cursor).total_seconds() / 86400, 3)})
+        cursor, lord_index, first = period_end, (lord_index + 1) % 9, False
+    return periods
+
+
+def varshaphal(request: VarshaphalRequest, settings: Settings) -> dict:
+    """Compute a factual Lahiri solar-return / Tajika baseline for the selected year."""
+    utc, natal_jd = _utc_and_jd(request, settings)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    target_year = request.year or datetime.now(ZoneInfo(request.timezone)).year
+    natal_planets = _positions(natal_jd, True)
+    natal_sun = next(planet.longitude for planet in natal_planets if planet.name == "Sun")
+    natal_moon = next(planet.longitude for planet in natal_planets if planet.name == "Moon")
+    return_jd = _solar_return_jd(request, settings, natal_sun, target_year)
+    return_local = _jd_to_local(return_jd, request.timezone)
+    next_return_jd = _solar_return_jd(request, settings, natal_sun, target_year + 1)
+    next_return_local = _jd_to_local(next_return_jd, request.timezone)
+    return_asc = swe.houses_ex(return_jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
+    return_planets = _positions(return_jd, True)
+    by_name = {planet.name: planet for planet in return_planets}
+    natal_asc = swe.houses_ex(natal_jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
+    age = target_year - request.birth_datetime.year
+    muntha_sign_index = (int(natal_asc // 30) + age) % 12
+    muntha_lord = SIGN_LORDS[SIGNS[muntha_sign_index]]
+    return_lagna_lord = SIGN_LORDS[SIGNS[int(return_asc // 30)]]
+    candidate_names = list(dict.fromkeys([return_lagna_lord, muntha_lord, "Sun", "Moon"]))
+    candidates = []
+    for priority, name in enumerate(candidate_names):
+        house = _whole_sign_house(by_name[name].longitude, return_asc)
+        score = 3 if house in {1, 4, 7, 10} else 2 if house in {5, 9} else 1
+        candidates.append({"planet": name, "house": house, "score": score, "priority": priority})
+    varshesha = sorted(candidates, key=lambda item: (-item["score"], item["priority"]))[0]
+    aspects = []
+    for index, first in enumerate(return_planets):
+        for second in return_planets[index + 1:]:
+            separation = min(abs(first.longitude - second.longitude) % 360, 360 - (abs(first.longitude - second.longitude) % 360))
+            for name, angle, relation in [("conjunction", 0, "neutral"), ("sextile", 60, "supportive"), ("square", 90, "challenging"), ("trine", 120, "supportive"), ("opposition", 180, "challenging")]:
+                orb = abs(separation - angle)
+                if orb <= 5:
+                    aspects.append({"first": first.name, "second": second.name, "aspect": name, "relation": relation, "orb": round(orb, 2)})
+    return {
+        "year": target_year,
+        "varsha_pravesh": {"local_datetime": return_local.isoformat(), "ascendant_sign": SIGNS[int(return_asc // 30)], "sun_longitude": round(natal_sun, 6), "birth_utc": utc.isoformat()},
+        "muntha": {"sign": SIGNS[muntha_sign_index], "lord": muntha_lord, "age_completed": age, "lord_return_house": _whole_sign_house(by_name[muntha_lord].longitude, return_asc)},
+        "varshesha": {**varshesha, "candidates": candidates, "method": "Highest angular/trinal house score among return Lagna lord, Munthesha, Sun and Moon; ties follow candidate order."},
+        "tajika_aspects": aspects,
+        "mudda_dasha": _mudda_dasha(request, settings, return_local, next_return_local, natal_moon),
+        "rule_pack": {"varsha_pravesh": "Exact Lahiri sidereal Sun longitude return solved iteratively with Swiss Ephemeris.", "muntha": "Natal whole-sign Lagna advanced one sign per completed solar year.", "tajika_aspects": "Configured 5° geometric orb for conjunction, sextile, square, trine and opposition; applying/separating and full Tajika yogas are not inferred.", "mudda_dasha": "Annual Vimshottari proportion scaled to one tropical year, beginning from the natal Moon nakshatra balance."},
+        "notice": "Tajika and Varshaphal methods have regional rule variations. This tool exposes a deterministic baseline and its assumptions; it is not a guarantee or a complete professional judgement.",
     }
 
 

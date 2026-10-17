@@ -2,7 +2,7 @@ from datetime import datetime
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from .advanced import gochar, jaimini, kundli, matchmaking, muhurat, panchang, prashna, strengths, vimshottari_dasha
+from .advanced import gochar, jaimini, kundli, matchmaking, muhurat, panchang, prashna, strengths, varshaphal, vimshottari_dasha
 from .astrology import calculate_chart, calculate_multi_system
 from .config import get_settings
 from .database import Base, engine
@@ -10,7 +10,7 @@ from .feedback import create_forecast, dispatch_due_followups, record_feedback
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
 from .reports import chart_report
-from .schemas import CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, JaiminiRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, ReportRequest, TransitRequest, UploadIntentRequest
+from .schemas import CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, JaiminiRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, ReportRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
 from .vision import interpret_symbolic_image
 
 settings = get_settings()
@@ -50,6 +50,13 @@ def calculate_vimshottari_dasha(request: DashaRequest) -> dict:
 def analyse_jaimini(request: JaiminiRequest) -> dict:
     try:
         return jaimini(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/varshaphal/analyse")
+def analyse_varshaphal(request: VarshaphalRequest) -> dict:
+    try:
+        return varshaphal(request, settings)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

@@ -1,8 +1,8 @@
 from datetime import datetime
 from app.astrology import calculate_chart, calculate_multi_system
-from app.advanced import BAV_EXPECTED_TOTALS, gochar, jaimini, kundli, prashna, strengths, vimshottari_dasha
+from app.advanced import BAV_EXPECTED_TOTALS, gochar, jaimini, kundli, prashna, strengths, varshaphal, vimshottari_dasha
 from app.config import Settings
-from app.schemas import ChartRequest, DashaRequest, JaiminiRequest, KundliRequest, PrashnaRequest, TransitRequest
+from app.schemas import ChartRequest, DashaRequest, JaiminiRequest, KundliRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -63,4 +63,15 @@ def test_jaimini_engine_returns_transparent_rule_pack(tmp_path):
     assert result["jaimini_aspects"]
     assert result["chara_dasha_periods"]
     assert "Seven-karaka" in result["rule_pack"]["chara_karakas"]
+
+
+def test_varshaphal_returns_solar_return_tajika_and_mudda_timeline(tmp_path):
+    request = VarshaphalRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090, year=2026)
+    result = varshaphal(request, Settings(ephemeris_path=tmp_path))
+    assert result["year"] == 2026
+    assert result["varsha_pravesh"]["ascendant_sign"]
+    assert result["muntha"]["age_completed"] == 31
+    assert result["varshesha"]["planet"]
+    assert result["mudda_dasha"]
+    assert "Lahiri sidereal Sun longitude return" in result["rule_pack"]["varsha_pravesh"]
 

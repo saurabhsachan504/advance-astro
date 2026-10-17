@@ -77,6 +77,10 @@ class JaiminiRequest(ChartRequest):
     years: int = Field(default=72, ge=1, le=120)
 
 
+class VarshaphalRequest(ChartRequest):
+    year: int | None = Field(default=None, ge=1900, le=2200)
+
+
 class CalendarRequest(BaseModel):
     date: date
     timezone: str = Field(min_length=3, max_length=64)
