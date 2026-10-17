@@ -9,6 +9,7 @@ import "./advanced-link.css";
 import "./advanced/pro/pro.css";
 import "./ashtakavarga.css";
 import "./premium-ui.css";
+import "./noir-copper.css";
 
 export const metadata: Metadata = {
   title: "Advance Astro",
