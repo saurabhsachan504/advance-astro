@@ -1,6 +1,6 @@
 from datetime import datetime
 from app.astrology import calculate_chart, calculate_multi_system
-from app.advanced import gochar, kundli, prashna, strengths, vimshottari_dasha
+from app.advanced import BAV_EXPECTED_TOTALS, gochar, kundli, prashna, strengths, vimshottari_dasha
 from app.config import Settings
 from app.schemas import ChartRequest, DashaRequest, KundliRequest, PrashnaRequest, TransitRequest
 
@@ -37,11 +37,18 @@ def test_dasha_and_kundli_return_structured_deterministic_data(tmp_path):
 def test_gochar_strengths_and_prashna_return_facts(tmp_path):
     settings = Settings(ephemeris_path=tmp_path)
     common = dict(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
-    assert gochar(TransitRequest(**common), settings)["planets"]
+    transit = gochar(TransitRequest(**common), settings)["planets"]
+    assert transit
+    assert all("speed_longitude_deg_day" in planet for planet in transit)
+    assert any(abs(planet["speed_longitude_deg_day"]) > 0 for planet in transit)
     strength = strengths(ChartRequest(**common), settings)
     assert len(strength["shadbala_components"]) == 7
     assert len(strength["sarvashtakavarga"]["houses_from_lagna"]) == 12
     assert set(strength["bhinna_ashtakavarga"]) == {"Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"}
+    assert {planet: values["total"] for planet, values in strength["bhinna_ashtakavarga"].items()} == BAV_EXPECTED_TOTALS
+    assert strength["sarvashtakavarga"]["total"] == 337
+    assert strength["checksums"]["valid"] is True
+    assert any(row["components"]["cheshta_motion_index"] > 0 for row in strength["shadbala_components"])
     question = PrashnaRequest(question="What should I focus on?", question_datetime=datetime(2026, 10, 17, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
     assert prashna(question, settings)["lagna"]["name"] == "Ascendant"
 

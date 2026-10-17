@@ -166,12 +166,16 @@ def gochar(request: TransitRequest, settings: Settings) -> dict:
     natal = _positions(natal_jd, True)
     transit = _positions(transit_jd, True)
     natal_asc = swe.houses_ex(natal_jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
-    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
+    # Request longitude speed explicitly.  Without this Swiss Ephemeris can
+    # return a zero-filled speed slot, which makes retrograde state unreliable.
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
     rows = []
+    rahu_speed = swe.calc_ut(transit_jd, PLANETS["Rahu"], flags)[0][3]
     for body in transit:
         code = PLANETS.get(body.name)
-        speed = swe.calc_ut(transit_jd, code, flags)[0][3] if code is not None else 0
-        rows.append({"name": body.name, "longitude": body.longitude, "sign": body.sign, "house_from_lagna": _whole_sign_house(body.longitude, natal_asc), "retrograde": speed < 0, "natal_sign": next(item.sign for item in natal if item.name == body.name)})
+        # Ketu is derived as the point opposite Rahu, so it has Rahu's motion.
+        speed = rahu_speed if body.name == "Ketu" else swe.calc_ut(transit_jd, code, flags)[0][3]
+        rows.append({"name": body.name, "longitude": body.longitude, "sign": body.sign, "house_from_lagna": _whole_sign_house(body.longitude, natal_asc), "speed_longitude_deg_day": round(speed, 6), "retrograde": speed < 0, "natal_sign": next(item.sign for item in natal if item.name == body.name)})
     natal_moon = next(item for item in natal if item.name == "Moon")
     transit_saturn = next(item for item in transit if item.name == "Saturn")
     moon_sign, saturn_sign = int(natal_moon.longitude // 30), int(transit_saturn.longitude // 30)
@@ -203,13 +207,25 @@ BAV_RULES = {
     "Saturn": {"Sun": (1,2,4,7,8,10,11), "Moon": (3,6,11), "Mars": (3,5,6,10,11,12), "Mercury": (6,8,9,10,11,12), "Jupiter": (5,6,11,12), "Venus": (6,11,12), "Saturn": (3,5,6,11), "Lagna": (1,3,4,6,10,11)},
 }
 
+# Published classical Bhinna-Ashtakavarga table checksums.  Keeping these next
+# to the rule table prevents quiet regressions when a house entry is edited.
+BAV_EXPECTED_TOTALS = {"Sun": 48, "Moon": 49, "Mars": 39, "Mercury": 54, "Jupiter": 56, "Venus": 52, "Saturn": 39}
+SARVASHTAKAVARGA_EXPECTED_TOTAL = 337
+
+# Corrected entries: Sun receives bindus from Mercury and Lagna in the 12th,
+# and Moon receives one from Jupiter in the 12th.
+BAV_RULES["Sun"]["Mercury"] = (3, 5, 6, 9, 10, 11, 12)
+BAV_RULES["Sun"]["Lagna"] = (3, 4, 6, 10, 11, 12)
+BAV_RULES["Moon"]["Jupiter"] = (1, 4, 7, 8, 10, 11, 12)
+
 
 def strengths(request: ChartRequest, settings: Settings) -> dict:
     """Bhinna/Sarvashtakavarga plus transparent, component-level strength factors."""
     _, jd = _utc_and_jd(request, settings)
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     asc = swe.houses_ex(jd, request.latitude, request.longitude, b"W", swe.FLG_SIDEREAL)[1][0] % 360
-    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
+    # FLG_SPEED is required for a meaningful Chesta-motion component.
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
     positions = {}
     rows = []
     for name, code in PLANETS.items():
@@ -236,8 +252,12 @@ def strengths(request: ChartRequest, settings: Settings) -> dict:
             signs.append(bindus)
         bav[subject] = {"sign_bindus": signs, "total": sum(signs)}
     sarva = [sum(bav[planet]["sign_bindus"][sign] for planet in BAV_RULES) for sign in range(12)]
+    actual_totals = {planet: data["total"] for planet, data in bav.items()}
+    table_valid = actual_totals == BAV_EXPECTED_TOTALS and sum(sarva) == SARVASHTAKAVARGA_EXPECTED_TOTAL
+    if not table_valid:
+        raise RuntimeError("Bhinna-Ashtakavarga table checksum validation failed")
     houses = [{"house": number, "sign": SIGNS[(int(asc // 30) + number - 1) % 12], "bindus": sarva[(int(asc // 30) + number - 1) % 12]} for number in range(1, 13)]
-    return {"shadbala_components": rows, "bhinna_ashtakavarga": bav, "sarvashtakavarga": {"sign_bindus": sarva, "total": sum(sarva), "houses_from_lagna": houses}, "notice": "Bhinna and Sarvashtakavarga bindu tables are deterministic. Strength factors expose Uchcha, Kendra, Dig, motion and Naisargika components; full tradition-specific Shadbala additions (Kala, Drik, divisional and ayan-specific variants) require a selectable rule pack."}
+    return {"shadbala_components": rows, "bhinna_ashtakavarga": bav, "sarvashtakavarga": {"sign_bindus": sarva, "total": sum(sarva), "houses_from_lagna": houses}, "checksums": {"valid": table_valid, "bhinna_expected_totals": BAV_EXPECTED_TOTALS, "sarvashtakavarga_expected_total": SARVASHTAKAVARGA_EXPECTED_TOTAL}, "notice": "Bhinna and Sarvashtakavarga bindu tables are deterministic and checksum-validated. Strength factors expose Uchcha, Kendra, Dig, motion and Naisargika components; full tradition-specific Shadbala additions (Kala, Drik, divisional and ayan-specific variants) require a selectable rule pack."}
 
 
 def prashna(request: PrashnaRequest, settings: Settings) -> dict:
