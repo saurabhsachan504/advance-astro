@@ -17,6 +17,7 @@ import "./location-search.css";
 import "./studios.css";
 import "./timeline.css";
 import "./traditional-kundli.css";
+import "./traditional-kundli-fix.css";
 import LanguageToggle from "./language-toggle";
 import LocationSearch from "./location-search";
 
