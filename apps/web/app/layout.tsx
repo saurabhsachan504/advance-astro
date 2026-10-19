@@ -23,6 +23,7 @@ import "./kundli-wheel-fix.css";
 import "./kundli-wheel-contrast.css";
 import "./kundli-north-size.css";
 import "./kundli-traditional-themes.css";
+import "./kundli-north-traditional.css";
 import LanguageToggle from "./language-toggle";
 import LocationSearch from "./location-search";
 
