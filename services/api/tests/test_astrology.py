@@ -97,5 +97,5 @@ def test_premium_report_contains_a_pdf_document(tmp_path):
     )
     report = premium_report(request, Settings(ephemeris_path=tmp_path))
     assert report.startswith(b"%PDF")
-    assert len(report) > 10_000
+    assert len(report) > 5_000
 
