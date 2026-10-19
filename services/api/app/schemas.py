@@ -147,6 +147,9 @@ class TransitRequest(ChartRequest):
 class GocharDashboardRequest(TransitRequest):
     range_days: Literal[7, 30] = 7
 
+class TimelineRequest(ChartRequest):
+    range_days: Literal[7, 30] = 30
+
 
 class PrashnaRequest(BaseModel):
     question: str = Field(min_length=3, max_length=1000)

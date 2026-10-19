@@ -11,8 +11,9 @@ from .locations import search_locations
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
 from .reports import chart_report, premium_report
-from .schemas import AstrocartographyRequest, CalendarMonthRequest, CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KPRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, NumerologyRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
+from .schemas import AstrocartographyRequest, CalendarMonthRequest, CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KPRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, NumerologyRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TimelineRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
 from .studios import astrocartography, numerology
+from .timeline import dasha_gochar_timeline
 from .vision import interpret_symbolic_image
 
 settings = get_settings()
@@ -136,6 +137,13 @@ def live_gochar(request: TransitRequest) -> dict:
 def personal_gochar_dashboard(request: GocharDashboardRequest) -> dict:
     try:
         return gochar_dashboard(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/timeline/dasha-gochar")
+def dasha_gochar_event_timeline(request: TimelineRequest) -> dict:
+    try:
+        return dasha_gochar_timeline(request, settings)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
