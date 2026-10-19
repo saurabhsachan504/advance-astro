@@ -77,6 +77,10 @@ class JaiminiRequest(ChartRequest):
     years: int = Field(default=72, ge=1, le=120)
 
 
+class KPRequest(ChartRequest):
+    event: Literal["marriage", "business", "travel", "naming", "property_purchase"] = "marriage"
+
+
 class VarshaphalRequest(ChartRequest):
     year: int | None = Field(default=None, ge=1900, le=2200)
 

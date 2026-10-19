@@ -22,7 +22,7 @@ from .astrology import (
     _utc_and_jd,
 )
 from .config import Settings
-from .schemas import CalendarMonthRequest, CalendarRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from .schemas import CalendarMonthRequest, CalendarRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 NAKSHATRA_SPAN = 360 / 27
 DASHA_YEAR_DAYS = 365.2425
@@ -439,6 +439,86 @@ def gochar_dashboard(request: GocharDashboardRequest, settings: Settings) -> dic
         "ingress_precision": "First six-hour local scan after a sign change; not an exact ingress minute.",
         "notice": "This dashboard reports calculated sidereal positions and configured geometry only. It does not guarantee outcomes.",
     }
+
+
+KP_EVENT_HOUSES = {
+    "marriage": (2, 7, 11),
+    "business": (2, 6, 10, 11),
+    "travel": (3, 9, 12),
+    "naming": (2, 5, 11),
+    "property_purchase": (2, 4, 11),
+}
+WEEKDAY_LORDS = ("Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Sun")
+
+
+def _kp_house(longitude: float, cusps: list[float]) -> int:
+    """Assign a longitude to a Placidus cusp arc, retaining the cusp boundary rule."""
+    for index, start in enumerate(cusps):
+        end = cusps[(index + 1) % 12]
+        if (longitude - start) % 360 <= (end - start) % 360:
+            return index + 1
+    return 12
+
+
+def kp_studio(request: KPRequest, settings: Settings) -> dict:
+    """Expose KP inputs and a bounded event-house rule pack without outcome claims."""
+    _, natal_jd = _utc_and_jd(request, settings)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    raw_cusps, _ = swe.houses_ex(natal_jd, request.latitude, request.longitude, b"P", swe.FLG_SIDEREAL)
+    cusp_longitudes = [value % 360 for value in raw_cusps]
+    cusps = []
+    for index, longitude in enumerate(cusp_longitudes):
+        kp = _kp_sublord(longitude)
+        cusps.append({"house": index + 1, "longitude": round(longitude, 6), "sign": SIGNS[int(longitude // 30)], "sign_lord": SIGN_LORDS[SIGNS[int(longitude // 30)]], **kp})
+    planets = _positions(natal_jd, True)
+    points = []
+    for planet in planets:
+        kp = _kp_sublord(planet.longitude)
+        points.append({"name": planet.name, "longitude": planet.longitude, "sign": planet.sign, "house": _kp_house(planet.longitude, cusp_longitudes), **kp})
+    points.insert(0, {"name": "Ascendant", "longitude": cusps[0]["longitude"], "sign": cusps[0]["sign"], "house": 1, "nakshatra": cusps[0]["nakshatra"], "star_lord": cusps[0]["star_lord"], "sub_lord": cusps[0]["sub_lord"]})
+
+    significators = []
+    for point in points:
+        name = point["name"]
+        if name == "Ascendant":
+            continue
+        significators.append({
+            "planet": name,
+            "occupies_house": point["house"],
+            "sign_lord_houses": [cusp["house"] for cusp in cusps if cusp["sign_lord"] == name],
+            "star_lord_houses": [cusp["house"] for cusp in cusps if cusp["star_lord"] == name],
+            "sub_lord_houses": [cusp["house"] for cusp in cusps if cusp["sub_lord"] == name],
+        })
+
+    now = datetime.now(ZoneInfo(request.timezone)).replace(tzinfo=None)
+    current_jd = _at_datetime_jd(now, request.timezone, settings)
+    current_asc = swe.houses_ex(current_jd, request.latitude, request.longitude, b"P", swe.FLG_SIDEREAL)[1][0] % 360
+    current_moon = swe.calc_ut(current_jd, swe.MOON, swe.FLG_SWIEPH | swe.FLG_SIDEREAL)[0][0] % 360
+    moon_kp = _kp_sublord(current_moon)
+    roles = [
+        {"role": "Day lord", "planet": WEEKDAY_LORDS[now.weekday()]},
+        {"role": "Current Moon sign lord", "planet": SIGN_LORDS[SIGNS[int(current_moon // 30)]]},
+        {"role": "Current Moon star lord", "planet": moon_kp["star_lord"]},
+        {"role": "Current Moon sub lord", "planet": moon_kp["sub_lord"]},
+        {"role": "Current ascendant sign lord", "planet": SIGN_LORDS[SIGNS[int(current_asc // 30)]]},
+    ]
+    ruling_planets = []
+    for role in roles:
+        existing = next((item for item in ruling_planets if item["planet"] == role["planet"]), None)
+        if existing:
+            existing["roles"].append(role["role"])
+        else:
+            ruling_planets.append({"planet": role["planet"], "roles": [role["role"]]})
+
+    target_houses = KP_EVENT_HOUSES[request.event]
+    event_cusps = [cusp for cusp in cusps if cusp["house"] in target_houses]
+    supporting = [item for item in significators if item["occupies_house"] in target_houses or set(item["sign_lord_houses"] + item["star_lord_houses"] + item["sub_lord_houses"]) & set(target_houses)]
+    cards = [
+        {"title": "Event house set", "detail": f"{request.event.replace('_', ' ').title()} baseline uses houses {', '.join(map(str, target_houses))}.", "rule": "The house set is a configurable study baseline, not a completed KP judgement."},
+        {"title": "Cusp sub-lords", "detail": "; ".join(f"H{cusp['house']}: {cusp['sub_lord']}" for cusp in event_cusps), "rule": "Review the selected event houses' sub-lords with the full KP significator hierarchy."},
+        {"title": "Candidate significators", "detail": ", ".join(item["planet"] for item in supporting) or "No planet matched this compact baseline.", "rule": "Candidates occupy or govern at least one selected event house in this rule pack."},
+    ]
+    return {"method": "KP sidereal Placidus cusps with Vimshottari star and sub-lords", "event": request.event, "cusps": cusps, "points": points, "significators": significators, "ruling_planets": ruling_planets, "event_timing": {"target_houses": list(target_houses), "cusp_sub_lords": event_cusps, "candidate_significators": supporting, "cards": cards}, "notice": "KP Studio presents calculation inputs and an explicit event-house baseline. It does not make guaranteed predictions or replace a full practitioner-led significator analysis."}
 
 
 EXALTATION = {"Sun": 10, "Moon": 33, "Mars": 298, "Mercury": 165, "Jupiter": 95, "Venus": 357, "Saturn": 200}

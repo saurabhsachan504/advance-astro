@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from app.astrology import calculate_chart, calculate_multi_system
-from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kundli, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
+from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kp_studio, kundli, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
 from app.config import Settings
 from app.reports import premium_report
-from app.schemas import CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from app.schemas import CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -107,4 +107,18 @@ def test_panchang_month_returns_daily_calendar_and_muhurat_windows():
     assert result["days"][0]["tithi"]["name"]
     assert "rahu_kaal" in result["days"][0]
     assert all("muhurat_windows" in day for day in result["days"])
+
+
+def test_kp_studio_returns_cusps_significators_and_event_rules(tmp_path):
+    request = KPRequest(
+        birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090,
+        event="marriage",
+    )
+    result = kp_studio(request, Settings(ephemeris_path=tmp_path))
+    assert len(result["cusps"]) == 12
+    assert len(result["points"]) == 10
+    assert len(result["significators"]) == 9
+    assert result["event_timing"]["target_houses"] == [2, 7, 11]
+    assert result["event_timing"]["cards"]
+    assert result["ruling_planets"]
 
