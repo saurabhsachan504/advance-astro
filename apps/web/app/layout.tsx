@@ -19,6 +19,7 @@ import "./timeline.css";
 import "./traditional-kundli.css";
 import "./traditional-kundli-fix.css";
 import "./traditional-kundli-contrast.css";
+import "./kundli-wheel-fix.css";
 import LanguageToggle from "./language-toggle";
 import LocationSearch from "./location-search";
 
