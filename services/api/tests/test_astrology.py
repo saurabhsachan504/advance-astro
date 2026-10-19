@@ -3,6 +3,7 @@ from app.astrology import calculate_chart, calculate_multi_system
 from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kp_studio, kundli, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
 from app.config import Settings
 from app.reports import premium_report
+from app.locations import normalise_locations
 from app.schemas import CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
@@ -121,4 +122,9 @@ def test_kp_studio_returns_cusps_significators_and_event_rules(tmp_path):
     assert result["event_timing"]["target_houses"] == [2, 7, 11]
     assert result["event_timing"]["cards"]
     assert result["ruling_planets"]
+
+
+def test_location_search_normalises_city_coordinates_and_timezone():
+    locations = normalise_locations({"results": [{"name": "Delhi", "admin1": "National Capital Territory of Delhi", "country": "India", "latitude": 28.6139, "longitude": 77.209, "timezone": "Asia/Kolkata"}]})
+    assert locations == [{"label": "Delhi, National Capital Territory of Delhi, India", "latitude": 28.6139, "longitude": 77.209, "timezone": "Asia/Kolkata"}]
 

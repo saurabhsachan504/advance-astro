@@ -13,7 +13,9 @@ import "./noir-copper.css";
 import "./light-clarity.css";
 import "./hero-mobile.css";
 import "./language.css";
+import "./location-search.css";
 import LanguageToggle from "./language-toggle";
+import LocationSearch from "./location-search";
 
 export const metadata: Metadata = {
   title: "Advance Astro",
@@ -21,6 +23,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}<LanguageToggle /></body></html>;
+  return <html lang="en"><body>{children}<LocationSearch /><LanguageToggle /></body></html>;
 }
 

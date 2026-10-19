@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from .advanced import gochar, gochar_dashboard, jaimini, kp_studio, kundli, matchmaking, muhurat, panchang, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
@@ -7,6 +7,7 @@ from .astrology import calculate_chart, calculate_multi_system
 from .config import get_settings
 from .database import Base, engine
 from .feedback import create_forecast, dispatch_due_followups, record_feedback
+from .locations import search_locations
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
 from .reports import chart_report, premium_report
@@ -24,6 +25,16 @@ def initialise_database() -> None:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "engine_version": settings.engine_version}
+
+@app.get("/v1/locations/search")
+async def find_locations(query: str = Query(min_length=2, max_length=120)) -> dict:
+    cleaned_query = query.strip()
+    if len(cleaned_query) < 2:
+        raise HTTPException(status_code=422, detail="Location search needs at least 2 characters")
+    try:
+        return {"results": await search_locations(cleaned_query)}
+    except ValueError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 @app.post("/v1/charts/calculate", response_model=ChartResponse)
 def calculate(request: ChartRequest) -> ChartResponse:
