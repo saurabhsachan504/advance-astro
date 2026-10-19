@@ -2,7 +2,6 @@
 
 import { Component, FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import Timeline from "./timeline";
-import TraditionalKundli from "./traditional-kundli";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 type Data = Record<string, unknown>;
@@ -85,7 +84,7 @@ function Result({ result, active }: { result: Data; active: string }) {
   if (active === "astrocartography") return <AstrocartographyMap result={result}/>;
   if (active === "timeline") return <Timeline result={result}/>;
   if (active === "calendar") return <PanchangCalendar initial={result}/>;
-  if (active === "kundli") return <TraditionalKundli result={result}/>;
+  if (active === "kundli") return <VisualKundli result={result}/>;
   return <pre className="pro-json">{JSON.stringify(result, null, 2)}</pre>;
 }
 
