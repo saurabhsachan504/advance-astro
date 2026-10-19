@@ -14,6 +14,7 @@ import "./light-clarity.css";
 import "./hero-mobile.css";
 import "./language.css";
 import "./location-search.css";
+import "./studios.css";
 import LanguageToggle from "./language-toggle";
 import LocationSearch from "./location-search";
 

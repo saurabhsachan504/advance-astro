@@ -1,10 +1,11 @@
 from datetime import date, datetime
 from app.astrology import calculate_chart, calculate_multi_system
 from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kp_studio, kundli, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
+from app.studios import astrocartography, numerology
 from app.config import Settings
 from app.reports import premium_report
 from app.locations import normalise_locations
-from app.schemas import CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from app.schemas import AstrocartographyRequest, CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, NumerologyRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -127,4 +128,15 @@ def test_kp_studio_returns_cusps_significators_and_event_rules(tmp_path):
 def test_location_search_normalises_city_coordinates_and_timezone():
     locations = normalise_locations({"results": [{"name": "Delhi", "admin1": "National Capital Territory of Delhi", "country": "India", "latitude": 28.6139, "longitude": 77.209, "timezone": "Asia/Kolkata"}]})
     assert locations == [{"label": "Delhi, National Capital Territory of Delhi, India", "latitude": 28.6139, "longitude": 77.209, "timezone": "Asia/Kolkata"}]
+
+
+def test_numerology_and_astrocartography_return_traceable_studios(tmp_path):
+    common = dict(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
+    numbers = numerology(NumerologyRequest(**common, full_name="Vinay Pathak", year=2026))
+    assert numbers["system"] == "Pythagorean numerology"
+    assert next(row for row in numbers["core_numbers"] if row["key"] == "life_path")["value"] == 11
+    world_map = astrocartography(AstrocartographyRequest(**common), Settings(ephemeris_path=tmp_path))
+    assert len(world_map["lines"]) == len(PLANETS) * 4
+    assert {line["angle"] for line in world_map["lines"]} == {"MC", "IC", "ASC", "DSC"}
+    assert all(-180 <= point[0] <= 180 for line in world_map["lines"] for point in line["coordinates"])
 

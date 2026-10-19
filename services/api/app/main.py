@@ -11,7 +11,8 @@ from .locations import search_locations
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
 from .reports import chart_report, premium_report
-from .schemas import CalendarMonthRequest, CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KPRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
+from .schemas import AstrocartographyRequest, CalendarMonthRequest, CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KPRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, NumerologyRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
+from .studios import astrocartography, numerology
 from .vision import interpret_symbolic_image
 
 settings = get_settings()
@@ -47,6 +48,17 @@ def calculate(request: ChartRequest) -> ChartResponse:
 def calculate_all_systems(request: ChartRequest) -> dict:
     try:
         return calculate_multi_system(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/numerology/analyse")
+def analyse_numerology(request: NumerologyRequest) -> dict:
+    return numerology(request)
+
+@app.post("/v1/astrocartography/map")
+def create_astrocartography_map(request: AstrocartographyRequest) -> dict:
+    try:
+        return astrocartography(request, settings)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

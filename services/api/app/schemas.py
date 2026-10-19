@@ -81,6 +81,15 @@ class KPRequest(ChartRequest):
     event: Literal["marriage", "business", "travel", "naming", "property_purchase"] = "marriage"
 
 
+class NumerologyRequest(ChartRequest):
+    full_name: str = Field(default="Private profile", min_length=1, max_length=120)
+    year: int | None = Field(default=None, ge=1900, le=2200)
+
+
+class AstrocartographyRequest(ChartRequest):
+    pass
+
+
 class VarshaphalRequest(ChartRequest):
     year: int | None = Field(default=None, ge=1900, le=2200)
 
