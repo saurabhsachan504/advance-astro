@@ -1,0 +1,8 @@
+/* Global language preference: shared by Home, Classic and Advanced Pro. */
+html[data-language="hi"] body{font-family:"Noto Sans Devanagari","Nirmala UI",Mangal,Inter,ui-sans-serif,system-ui,sans-serif}
+html[data-language="hi"] h1,html[data-language="hi"] h2,html[data-language="hi"] h3{font-family:"Noto Serif Devanagari",Georgia,"Nirmala UI",serif;letter-spacing:-.7px;line-height:1.14}
+.language-toggle{position:fixed;z-index:1000;right:20px;bottom:20px;display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:0 13px;border:1px solid rgba(233,185,110,.72);border-radius:999px;background:linear-gradient(135deg,#2a1d27,#171b2b);box-shadow:0 10px 26px rgba(0,0,0,.28);color:#fff1d8;font:800 11px/1 Inter,ui-sans-serif,system-ui,sans-serif;cursor:pointer;letter-spacing:.02em;transition:transform .18s ease,box-shadow .18s ease}
+.language-toggle span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#f4bd78,#ed785d);color:#25140e;font:800 13px/1 "Nirmala UI",Mangal,sans-serif}.language-toggle:hover,.language-toggle:focus-visible{outline:none;transform:translateY(-2px);box-shadow:0 14px 30px rgba(0,0,0,.35)}
+html[data-theme="light"] .language-toggle{background:linear-gradient(135deg,#fffaf0,#f3dfc9);color:#552f1d;border-color:#c87b35}
+html[data-language="hi"] .theme-toggle::after{content:"थीम"}
+@media(max-width:600px){.language-toggle{right:13px;bottom:13px;min-height:40px;padding:0 11px}.language-toggle span{width:21px;height:21px}}

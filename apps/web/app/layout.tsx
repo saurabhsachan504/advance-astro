@@ -12,6 +12,8 @@ import "./premium-ui.css";
 import "./noir-copper.css";
 import "./light-clarity.css";
 import "./hero-mobile.css";
+import "./language.css";
+import LanguageToggle from "./language-toggle";
 
 export const metadata: Metadata = {
   title: "Advance Astro",
@@ -19,6 +21,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return <html lang="en"><body>{children}<LanguageToggle /></body></html>;
 }
 
