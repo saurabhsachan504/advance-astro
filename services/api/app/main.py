@@ -9,8 +9,8 @@ from .database import Base, engine
 from .feedback import create_forecast, dispatch_due_followups, record_feedback
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
-from .reports import chart_report
-from .schemas import CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, ReportRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
+from .reports import chart_report, premium_report
+from .schemas import CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
 from .vision import interpret_symbolic_image
 
 settings = get_settings()
@@ -123,6 +123,14 @@ def download_chart_report(request: ReportRequest) -> StreamingResponse:
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return StreamingResponse(iter([report]), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=advance-astro-chart.pdf"})
+
+@app.post("/v1/reports/premium.pdf")
+def download_premium_report(request: PremiumReportRequest) -> StreamingResponse:
+    try:
+        report = premium_report(request, settings)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return StreamingResponse(iter([report]), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=veda-os-premium-report.pdf"})
 
 @app.post("/v1/uploads/intents")
 def upload_intent(request: UploadIntentRequest) -> dict:

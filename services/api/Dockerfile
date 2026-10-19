@@ -3,7 +3,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 # DGX Spark is ARM64; pyswisseph builds its C extension from source on this platform.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends build-essential \
+    && apt-get install -y --no-install-recommends build-essential fonts-noto-core \
     && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir .

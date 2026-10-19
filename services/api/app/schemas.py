@@ -131,3 +131,11 @@ class PrashnaRequest(BaseModel):
 class ReportRequest(ChartRequest):
     report_title: str = Field(default="Advance Astro Chart Report", min_length=3, max_length=100)
 
+
+class PremiumReportRequest(ChartRequest):
+    report_title: str = Field(default="Private Astrology Report", min_length=3, max_length=100)
+    profile_name: str = Field(default="Private profile", min_length=1, max_length=80)
+    language: Literal["en", "hi"] = "en"
+    gochar_range_days: Literal[7, 30] = 7
+    varshaphal_year: int | None = Field(default=None, ge=1900, le=2200)
+

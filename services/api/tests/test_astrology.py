@@ -2,7 +2,8 @@ from datetime import datetime
 from app.astrology import calculate_chart, calculate_multi_system
 from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kundli, prashna, strengths, varshaphal, vimshottari_dasha
 from app.config import Settings
-from app.schemas import ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from app.reports import premium_report
+from app.schemas import ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -87,4 +88,14 @@ def test_personal_gochar_dashboard_returns_daily_and_ingress_views(tmp_path):
     assert result["current"]["sade_sati"]["phase"]
     assert all("moon_sign" in day and "sade_sati_phase" in day for day in result["daily_overview"])
     assert all({"planet", "from_sign", "to_sign", "detected_local_datetime"}.issubset(event) for event in result["upcoming_ingresses"])
+
+
+def test_premium_report_contains_a_pdf_document(tmp_path):
+    request = PremiumReportRequest(
+        birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090,
+        profile_name="Test profile", gochar_range_days=7, varshaphal_year=2026,
+    )
+    report = premium_report(request, Settings(ephemeris_path=tmp_path))
+    assert report.startswith(b"%PDF")
+    assert len(report) > 10_000
 
