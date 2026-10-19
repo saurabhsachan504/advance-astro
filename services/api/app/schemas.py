@@ -88,6 +88,21 @@ class CalendarRequest(BaseModel):
     longitude: float = Field(ge=-180, le=180)
 
 
+class CalendarMonthRequest(BaseModel):
+    month: date
+    timezone: str = Field(min_length=3, max_length=64)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    event: Literal["marriage", "business", "travel", "naming", "property_purchase"] = "marriage"
+
+    @field_validator("month")
+    @classmethod
+    def require_month_start(cls, value: date) -> date:
+        if value.day != 1:
+            raise ValueError("month must be the first day of the month")
+        return value
+
+
 class MuhuratRequest(CalendarRequest):
     event: Literal["marriage", "business", "travel", "naming", "property_purchase"]
     end_date: date | None = None

@@ -2,7 +2,7 @@ from datetime import datetime
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from .advanced import gochar, gochar_dashboard, jaimini, kundli, matchmaking, muhurat, panchang, prashna, strengths, varshaphal, vimshottari_dasha
+from .advanced import gochar, gochar_dashboard, jaimini, kundli, matchmaking, muhurat, panchang, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
 from .astrology import calculate_chart, calculate_multi_system
 from .config import get_settings
 from .database import Base, engine
@@ -10,7 +10,7 @@ from .feedback import create_forecast, dispatch_due_followups, record_feedback
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
 from .reports import chart_report, premium_report
-from .schemas import CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
+from .schemas import CalendarMonthRequest, CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
 from .vision import interpret_symbolic_image
 
 settings = get_settings()
@@ -78,6 +78,13 @@ def analyse_matchmaking(request: MatchmakingRequest) -> dict:
 def daily_panchang(request: CalendarRequest) -> dict:
     try:
         return panchang(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+@app.post("/v1/calendar/month")
+def monthly_panchang(request: CalendarMonthRequest) -> dict:
+    try:
+        return panchang_month(request)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

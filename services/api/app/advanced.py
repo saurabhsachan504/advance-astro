@@ -22,7 +22,7 @@ from .astrology import (
     _utc_and_jd,
 )
 from .config import Settings
-from .schemas import CalendarRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from .schemas import CalendarMonthRequest, CalendarRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, MatchmakingRequest, MuhuratRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 NAKSHATRA_SPAN = 360 / 27
 DASHA_YEAR_DAYS = 365.2425
@@ -270,6 +270,32 @@ def panchang(request: CalendarRequest) -> dict:
         "choghadiya": {"day": day_windows, "night": night_windows},
         "eclipse_alerts": _next_eclipses(request.date, request.timezone),
         "provenance": {"ayanamsa": "Lahiri", "sunrise_method": "Swiss Ephemeris rise/set; civil fallback at polar latitudes"},
+    }
+
+
+def panchang_month(request: CalendarMonthRequest) -> dict:
+    """Return a location-aware monthly Panchang with transparent Muhurat availability."""
+    start = request.month
+    next_month = date(start.year + (start.month == 12), 1 if start.month == 12 else start.month + 1, 1)
+    days = []
+    cursor = start
+    while cursor < next_month:
+        daily = panchang(CalendarRequest(date=cursor, timezone=request.timezone, latitude=request.latitude, longitude=request.longitude))
+        rahu = daily["rahu_kaal"]
+        favourable = [
+            window for window in daily["choghadiya"]["day"]
+            if window["name"] in EVENT_FAVOURABLE[request.event] and (window["end"] <= rahu["start"] or window["start"] >= rahu["end"])
+        ]
+        days.append({
+            "date": cursor.isoformat(), "weekday": cursor.strftime("%A"), "tithi": daily["tithi"], "nakshatra": daily["nakshatra"], "yoga": daily["yoga"],
+            "sunrise": daily["sunrise"], "sunset": daily["sunset"], "rahu_kaal": rahu, "choghadiya": daily["choghadiya"],
+            "muhurat_windows": favourable, "muhurat_available": bool(favourable),
+        })
+        cursor += timedelta(days=1)
+    return {
+        "month": start.isoformat(), "timezone": request.timezone, "event": request.event, "days": days,
+        "request": {"timezone": request.timezone, "latitude": request.latitude, "longitude": request.longitude, "event": request.event},
+        "notice": "Muhurat highlights use the baseline event-favourable Choghadiya rule outside Rahu Kaal. Regional Panchang and family tradition rules are not included.",
     }
 
 

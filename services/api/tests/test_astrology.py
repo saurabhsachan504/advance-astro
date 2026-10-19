@@ -1,9 +1,9 @@
-from datetime import datetime
+from datetime import date, datetime
 from app.astrology import calculate_chart, calculate_multi_system
-from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kundli, prashna, strengths, varshaphal, vimshottari_dasha
+from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kundli, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
 from app.config import Settings
 from app.reports import premium_report
-from app.schemas import ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from app.schemas import CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -98,4 +98,13 @@ def test_premium_report_contains_a_pdf_document(tmp_path):
     report = premium_report(request, Settings(ephemeris_path=tmp_path))
     assert report.startswith(b"%PDF")
     assert len(report) > 5_000
+
+
+def test_panchang_month_returns_daily_calendar_and_muhurat_windows():
+    result = panchang_month(CalendarMonthRequest(month=date(2026, 2, 1), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090, event="marriage"))
+    assert result["month"] == "2026-02-01"
+    assert len(result["days"]) == 28
+    assert result["days"][0]["tithi"]["name"]
+    assert "rahu_kaal" in result["days"][0]
+    assert all("muhurat_windows" in day for day in result["days"])
 
