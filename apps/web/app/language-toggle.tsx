@@ -21,12 +21,56 @@ const HINDI: Record<string, string> = {
   "Advanced observatory": "उन्नत वेधशाला", "LOCAL ASTROLOGY TOOLKIT": "लोकल ज्योतिष टूलकिट", "Time, pattern": "समय, पैटर्न", "& compatibility.": "और अनुकूलता।", "All calculations run through your private Swiss Ephemeris backend. No cloud AI is required.": "सभी गणनाएँ आपके निजी Swiss Ephemeris बैकएंड से होती हैं। किसी क्लाउड AI की आवश्यकता नहीं है।", "YOUR REFERENCE PROFILE": "आपका संदर्भ प्रोफाइल", "Start with birth facts.": "जन्म विवरण से शुरू करें।", "deterministic math": "निश्चित गणित", "Vimshottari Dasha": "विम्शोत्तरी दशा", "Maha + Antardasha timeline": "महादशा + अंतर्दशा समयरेखा", "Interactive Kundli": "इंटरैक्टिव कुंडली", "D1 houses, D9 & D10 divisions": "D1 भाव, D9 और D10 विभाजन", "Astro calendar": "ज्योतिष कैलेंडर", "Panchang, Rahu Kaal, Choghadiya": "पंचांग, राहु काल, चौघड़िया", "Local favourable time windows": "स्थानीय शुभ समय-खंड", "Compare charts": "कुंडलियों की तुलना करें", "CALCULATION OUTPUT": "गणना परिणाम", "Choose a tool.": "कोई टूल चुनें।", "Calculating...": "गणना हो रही है...", "Transparent rules, not guaranteed outcomes.": "पारदर्शी नियम, परिणाम की गारंटी नहीं।", "Select any calculation above to reveal its local, traceable result.": "स्थानीय, पारदर्शी परिणाम देखने के लिए ऊपर कोई गणना चुनें।",
   "Toggle colour theme": "रंग थीम बदलें", "Profile": "प्रोफाइल", "Choose palm photo": "हथेली की फोटो चुनें", "Choose face photo": "चेहरे की फोटो चुनें", "Example: Career momentum may increase over the next month...": "उदाहरण: अगले महीने करियर की गति बढ़ सकती है...", "Interpretive forecast": "व्याख्यात्मक पूर्वानुमान", "Rule label": "नियम नाम", "Review date": "समीक्षा तिथि", "Save for feedback": "फीडबैक के लिए सहेजें", "Location search": "स्थान खोज", "Birth location": "जन्म स्थान", "City fills coordinates & timezone": "शहर से निर्देशांक और समय क्षेत्र भरें", "Close location": "स्थान खोज बंद करें", "Search city, e.g. Delhi, India": "शहर खोजें, जैसे दिल्ली, भारत", "Search": "खोजें", "Searching...": "खोजा जा रहा है...", "Set location": "स्थान सेट करें", "Enter at least 2 characters.": "कम से कम 2 अक्षर लिखें।", "No matching city found. Try city, state or country.": "कोई शहर नहीं मिला। शहर, राज्य या देश के साथ खोजें।", "Location search is unavailable.": "स्थान खोज अभी उपलब्ध नहीं है।", "Your typed city is used only for this lookup. Profiles remain in your browser.": "आपका शहर केवल इस खोज के लिए उपयोग होता है। प्रोफाइल आपके ब्राउज़र में रहते हैं।"
 };
-const ENGLISH = Object.fromEntries(Object.entries(HINDI).map(([english, hindi]) => [hindi, english]));
+// Calculation output is generated after the page has rendered, so these terms
+// are kept separately and applied to both the static interface and result cards.
+const CALCULATION_HINDI: Record<string, string> = {
+  "Yoga & Dosha Analyzer": "योग एवं दोष विश्लेषक",
+  "Classical yoga, Manglik and Kaal Sarp screening": "शास्त्रीय योग, मांगलिक और काल सर्प जाँच",
+  "Nakshatra & Pada Studio": "नक्षत्र एवं पाद स्टूडियो",
+  "Moon Nakshatra, Pada, deity and planet lords": "चंद्र नक्षत्र, पाद, देवता और ग्रह स्वामी",
+  "Dasha + Gochar Timeline": "दशा एवं गोचर समयरेखा",
+  "Dasha changes, retrogrades and sign ingresses": "दशा परिवर्तन, वक्री ग्रह और राशि प्रवेश",
+  "Yoga signals": "योग संकेत",
+  "Configured supportive combinations": "निर्धारित सहायक संयोजन",
+  "Dosha screening": "दोष जाँच",
+  "Flags shown with their exact rule": "सटीक नियम के साथ चिह्न दिखाए गए हैं",
+  "No configured yoga was detected in this compact rule set.": "इस संक्षिप्त नियम-समूह में कोई निर्धारित योग नहीं मिला।",
+  "Classical screening rules for the selected Lahiri sidereal birth chart": "चुनी हुई लाहिरी निरयण जन्म कुंडली के लिए शास्त्रीय जाँच नियम",
+  "Ascendant": "लग्न", "Lahiri sidereal": "लाहिरी निरयण", "Sidereal": "निरयण",
+  "Sun": "सूर्य", "Moon": "चंद्र", "Mars": "मंगल", "Mercury": "बुध", "Jupiter": "गुरु", "Venus": "शुक्र", "Saturn": "शनि", "Rahu": "राहु", "Ketu": "केतु",
+  "Aries": "मेष", "Taurus": "वृषभ", "Gemini": "मिथुन", "Cancer": "कर्क", "Leo": "सिंह", "Virgo": "कन्या", "Libra": "तुला", "Scorpio": "वृश्चिक", "Sagittarius": "धनु", "Capricorn": "मकर", "Aquarius": "कुंभ", "Pisces": "मीन",
+  "Ashwini": "अश्विनी", "Bharani": "भरणी", "Krittika": "कृत्तिका", "Rohini": "रोहिणी", "Mrigashira": "मृगशिरा", "Ardra": "आर्द्रा", "Punarvasu": "पुनर्वसु", "Pushya": "पुष्य", "Ashlesha": "आश्लेषा", "Magha": "मघा", "Purva Phalguni": "पूर्व फाल्गुनी", "Uttara Phalguni": "उत्तर फाल्गुनी", "Hasta": "हस्त", "Chitra": "चित्रा", "Swati": "स्वाती", "Vishakha": "विशाखा", "Anuradha": "अनुराधा", "Jyeshtha": "ज्येष्ठा", "Mula": "मूल", "Purva Ashadha": "पूर्वाषाढ़ा", "Uttara Ashadha": "उत्तराषाढ़ा", "Shravana": "श्रवण", "Dhanishta": "धनिष्ठा", "Shatabhisha": "शतभिषा", "Purva Bhadrapada": "पूर्व भाद्रपद", "Uttara Bhadrapada": "उत्तर भाद्रपद", "Revati": "रेवती",
+  "Pada": "पाद", "Deity": "देवता", "lord": "स्वामी", "House": "भाव", "Present": "उपस्थित", "Flagged": "चिह्नित", "Not flagged": "चिह्नित नहीं", "Review": "समीक्षा आवश्यक",
+  "Gajakesari Yoga": "गजकेसरी योग", "Kendra strength": "केंद्र बल", "Manglik Dosha": "मांगलिक दोष", "Kaal Sarp pattern": "काल सर्प पैटर्न", "Kemadruma pattern": "केमद्रुम पैटर्न",
+  "Moon and Jupiter are in a configured kendra relationship (same, fourth, seventh, or tenth sign).": "चंद्र और गुरु निर्धारित केंद्र संबंध (एक, चतुर्थ, सप्तम या दशम राशि) में हैं।",
+  "occupy Kendra houses from Lagna:": "लग्न से केंद्र भावों में स्थित हैं:",
+  "Mars is in H": "मंगल भाव ",
+  "from Lagna. This is a screening rule; tradition-specific exceptions and both partner charts must be assessed.": "में है। यह केवल जाँच नियम है; परंपरा-विशिष्ट अपवाद और दोनों साझेदारों की कुंडलियों का आकलन आवश्यक है।",
+  "from Lagna, outside the configured 1/4/7/8/12 screening houses.": "में है और निर्धारित 1/4/7/8/12 जाँच भावों से बाहर है।",
+  "All seven classical planets fall in one of the two Rahu-Ketu semicircles. Tradition-specific inclusion, conjunction and exception rules still need review.": "सभी सात शास्त्रीय ग्रह राहु-केतु के एक अर्धवृत्त में हैं। परंपरा-विशिष्ट समावेशन, युति और अपवाद नियमों की समीक्षा अभी आवश्यक है।",
+  "The seven classical planets do not all occupy a single Rahu-Ketu semicircle in this configured screening rule.": "इस निर्धारित जाँच नियम में सभी सात शास्त्रीय ग्रह राहु-केतु के एक ही अर्धवृत्त में नहीं हैं।",
+  "No classical planet other than Moon occupies either neighbouring sign from Moon. Kendra and cancellation rules are not applied in this compact screen.": "चंद्र के अतिरिक्त कोई शास्त्रीय ग्रह चंद्र की दोनों पड़ोसी राशियों में नहीं है। इस संक्षिप्त जाँच में केंद्र और दोष-निरस्तीकरण नियम लागू नहीं किए गए हैं।",
+  "Yoga and Dosha Analyzer shows transparent, compact classical screening rules. It is not a complete chart judgement, compatibility conclusion, or guaranteed outcome.": "योग एवं दोष विश्लेषक पारदर्शी, संक्षिप्त शास्त्रीय जाँच नियम दिखाता है। यह पूर्ण कुंडली निर्णय, मिलान निष्कर्ष या किसी परिणाम की गारंटी नहीं है।",
+  "Moon:": "चंद्र:", "Next": "अगले", "days": "दिन", "Gold:": "स्वर्ण:", "Mint:": "हरा:", "Blue:": "नीला:", "Coral:": "मूंगा:",
+  "Visual Kundli Studio": "दृश्य कुंडली स्टूडियो", "Rashi chart": "राशि कुंडली", "Navamsa harmonic chart": "नवांश विभाजित कुंडली", "Dashamsa harmonic chart": "दशमांश विभाजित कुंडली", "North": "उत्तर", "South": "दक्षिण", "Wheel": "चक्र",
+  "Personal Panchang Calendar": "व्यक्तिगत पंचांग कैलेंडर", "Rahu Kaal": "राहु काल", "Muhurat windows": "मुहूर्त समय", "Selected day": "चुना हुआ दिन", "Favourable windows shown in gold": "शुभ समय स्वर्ण रंग में दिखाए गए हैं", "Export .ics": ".ics निर्यात करें",
+  "Calculation unavailable": "गणना उपलब्ध नहीं है", "Calculation returned an invalid response. Please try again.": "गणना से अमान्य उत्तर मिला। कृपया फिर प्रयास करें।", "This result could not be rendered. Please run the tool again.": "यह परिणाम दिखाया नहीं जा सका। कृपया टूल फिर चलाएँ।", "Premium PDF report is unavailable.": "प्रीमियम PDF रिपोर्ट उपलब्ध नहीं है।",
+  "No AI inference or guaranteed outcomes.": "कोई AI अनुमान या परिणाम की गारंटी नहीं है।"
+};
+const ALL_HINDI: Record<string, string> = { ...HINDI, ...CALCULATION_HINDI };
+const ENGLISH = Object.fromEntries(Object.entries(ALL_HINDI).map(([english, hindi]) => [hindi, english]));
 
 function translate(value: string, language: Language) {
-  const dictionary = language === "hi" ? HINDI : ENGLISH;
+  const dictionary = language === "hi" ? ALL_HINDI : ENGLISH;
   const match = value.match(/^(\s*)([\s\S]*?)(\s*)$/);
-  return match ? `${match[1]}${dictionary[match[2]] || match[2]}${match[3]}` : value;
+  if (!match) return value;
+  const content = match[2];
+  if (dictionary[content]) return `${match[1]}${dictionary[content]}${match[3]}`;
+  const translated = Object.entries(dictionary)
+    .filter(([source]) => source.length > 2)
+    .sort(([first], [second]) => second.length - first.length)
+    .reduce((current, [source, target]) => current.replaceAll(source, target), content);
+  return `${match[1]}${translated}${match[3]}`;
 }
 
 function translateTree(root: Node, language: Language) {
