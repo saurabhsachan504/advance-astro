@@ -25,6 +25,9 @@ COPPER = HexColor("#b95c29")
 PAPER = HexColor("#fffaf2")
 MIST = HexColor("#f5eadc")
 MUTED = HexColor("#52617a")
+MIDNIGHT = HexColor("#0d1628")
+GOLD = HexColor("#edbd69")
+CREAM = HexColor("#fff4df")
 DEVANAGARI_FONT = Path("/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf")
 
 
@@ -49,6 +52,7 @@ class KundliWheel(Flowable):
     def __init__(self, bodies: list[dict], width: float = 122 * mm, height: float = 122 * mm):
         super().__init__()
         self.bodies, self.width, self.height = bodies, width, height
+        self.hAlign = "CENTER"
 
     def draw(self) -> None:
         canvas = self.canv
@@ -81,21 +85,41 @@ def _styles(language: str) -> dict[str, ParagraphStyle]:
         "eyebrow": ParagraphStyle("premium-eyebrow", parent=base["BodyText"], fontName=family, textColor=COPPER, fontSize=8, leading=11, spaceAfter=6),
         "body": ParagraphStyle("premium-body", parent=base["BodyText"], fontName=family, textColor=INK, fontSize=9, leading=14),
         "muted": ParagraphStyle("premium-muted", parent=base["BodyText"], fontName=family, textColor=MUTED, fontSize=8, leading=12),
-        "section": ParagraphStyle("premium-section", parent=base["Heading2"], fontName=family if language == "hi" else "Helvetica-Bold", textColor=INK, fontSize=15, leading=20, spaceBefore=6, spaceAfter=8),
+        "section": ParagraphStyle("premium-section", parent=base["Heading2"], fontName=family if language == "hi" else "Helvetica-Bold", textColor=INK, backColor=MIST, borderColor=HexColor("#d8a55a"), borderWidth=.55, borderPadding=(7, 7, 6), fontSize=15, leading=20, spaceBefore=7, spaceAfter=9),
+        "cover_title": ParagraphStyle("premium-cover-title", parent=base["Title"], fontName=family if language == "hi" else "Helvetica-Bold", textColor=CREAM, fontSize=29, leading=35, spaceAfter=7),
+        "cover_eyebrow": ParagraphStyle("premium-cover-eyebrow", parent=base["BodyText"], fontName=family, textColor=GOLD, fontSize=8, leading=11, spaceAfter=7),
+        "cover_body": ParagraphStyle("premium-cover-body", parent=base["BodyText"], fontName=family, textColor=HexColor("#d7ddeb"), fontSize=9, leading=15),
     }
 
 
 def _table(rows: list[list[str]], widths: list[float], language: str = "en") -> Table:
     table = Table(rows, colWidths=widths, repeatRows=1, hAlign="LEFT")
     family = _font_name(language)
-    table.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), INK), ("TEXTCOLOR", (0, 0), (-1, 0), PAPER), ("TEXTCOLOR", (0, 1), (-1, -1), INK), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [PAPER, MIST]), ("GRID", (0, 0), (-1, -1), .3, HexColor("#d7c5ad")), ("FONTNAME", (0, 0), (-1, 0), family), ("FONTNAME", (0, 1), (-1, -1), family), ("FONTSIZE", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+    table.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), MIDNIGHT), ("TEXTCOLOR", (0, 0), (-1, 0), CREAM), ("TEXTCOLOR", (0, 1), (-1, -1), INK), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [PAPER, MIST]), ("GRID", (0, 0), (-1, -1), .28, HexColor("#d7c5ad")), ("LINEBELOW", (0, 0), (-1, 0), 1, GOLD), ("FONTNAME", (0, 0), (-1, 0), family), ("FONTNAME", (0, 1), (-1, -1), family), ("FONTSIZE", (0, 0), (-1, 0), 7.6), ("FONTSIZE", (0, 1), (-1, -1), 8), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6), ("LEFTPADDING", (0, 0), (-1, -1), 7), ("RIGHTPADDING", (0, 0), (-1, -1), 7)]))
     return table
 
 
 def _page_decor(canvas, document) -> None:
-    canvas.saveState(); canvas.setStrokeColor(HexColor("#d6c1a7")); canvas.line(document.leftMargin, A4[1] - 13 * mm, A4[0] - document.rightMargin, A4[1] - 13 * mm)
-    canvas.setFillColor(COPPER); canvas.setFont("Helvetica-Bold", 7); canvas.drawString(document.leftMargin, A4[1] - 10 * mm, "VEDA / OS - PRIVATE ASTROLOGY LAB")
-    canvas.setFillColor(MUTED); canvas.setFont("Helvetica", 7); canvas.drawRightString(A4[0] - document.rightMargin, 10 * mm, f"Page {document.page}"); canvas.restoreState()
+    canvas.saveState(); canvas.setFillColor(MIDNIGHT); canvas.rect(0, A4[1] - 14 * mm, A4[0], 14 * mm, stroke=0, fill=1)
+    canvas.setStrokeColor(GOLD); canvas.setLineWidth(.45); canvas.line(document.leftMargin, A4[1] - 14 * mm, A4[0] - document.rightMargin, A4[1] - 14 * mm)
+    canvas.setFillColor(CREAM); canvas.setFont("Helvetica-Bold", 7); canvas.drawString(document.leftMargin, A4[1] - 9.5 * mm, "VEDA / OS  |  PRIVATE ASTROLOGY LAB")
+    canvas.setStrokeColor(HexColor("#d6c1a7")); canvas.line(document.leftMargin, 14 * mm, A4[0] - document.rightMargin, 14 * mm)
+    canvas.setFillColor(COPPER); canvas.setFont("Helvetica-Bold", 7); canvas.drawString(document.leftMargin, 9.5 * mm, "Lahiri sidereal  |  Swiss Ephemeris")
+    canvas.setFillColor(MUTED); canvas.setFont("Helvetica", 7); canvas.drawRightString(A4[0] - document.rightMargin, 9.5 * mm, f"Page {document.page}"); canvas.restoreState()
+
+
+def _cover_decor(canvas, document) -> None:
+    canvas.saveState(); canvas.setFillColor(MIDNIGHT); canvas.rect(0, 0, A4[0], A4[1], stroke=0, fill=1)
+    canvas.setStrokeColor(HexColor("#27405e")); canvas.setLineWidth(.6)
+    for offset in (42, 66, 92):
+        canvas.circle(A4[0] - 25 * mm, A4[1] - 24 * mm, offset * mm, stroke=1, fill=0)
+    canvas.setFillColor(GOLD)
+    for x, y, radius in ((27, 262, 1.4), (45, 243, .8), (169, 255, 1), (177, 102, .9), (32, 71, .8), (157, 59, 1.1)):
+        canvas.circle(x * mm, y * mm, radius * mm, stroke=0, fill=1)
+    canvas.setStrokeColor(HexColor("#665036")); canvas.line(18 * mm, 15 * mm, A4[0] - 18 * mm, 15 * mm)
+    canvas.setFillColor(GOLD); canvas.setFont("Helvetica-Bold", 8); canvas.drawString(18 * mm, 10 * mm, "VEDA / OS")
+    canvas.setFillColor(HexColor("#aab8cd")); canvas.setFont("Helvetica", 7); canvas.drawRightString(A4[0] - 18 * mm, 10 * mm, "PRIVATE COSMIC DOSSIER")
+    canvas.restoreState()
 
 
 def chart_report(request: ReportRequest, settings: Settings) -> bytes:
@@ -130,7 +154,7 @@ def premium_report(request: PremiumReportRequest, settings: Settings) -> bytes:
     yoga_dosha = yoga_dosha_analyzer(YogaDoshaRequest(**base), settings)
     output = BytesIO()
     document = SimpleDocTemplate(output, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=20 * mm, bottomMargin=18 * mm, title=request.report_title, author="VEDA / OS")
-    story = [Paragraph(labels["private"].upper(), styles["eyebrow"]), Paragraph(escape(request.report_title), styles["title"]), Paragraph(f"{labels['profile']}: <b>{escape(request.profile_name)}</b><br/>{labels['generated']}: {datetime.now().strftime('%d %b %Y, %H:%M')}<br/>{labels['birth']}: {request.birth_datetime.strftime('%d %b %Y, %H:%M')} - {escape(request.timezone)}", styles["body"]), Spacer(1, 6 * mm), KundliWheel(kundli_data["divisional_charts"]["D1"]), Spacer(1, 4 * mm), Paragraph(labels["chart"], styles["section"]), Paragraph(f"Ascendant: <b>{chart.ascendant.sign}</b> - {chart.ascendant.longitude:.2f} degrees - {chart.ascendant.nakshatra}", styles["body"]), Spacer(1, 4 * mm)]
+    story = [Paragraph(labels["private"].upper(), styles["cover_eyebrow"]), Paragraph(escape(request.report_title), styles["cover_title"]), Paragraph(f"{labels['profile']}: <b>{escape(request.profile_name)}</b><br/>{labels['generated']}: {datetime.now().strftime('%d %b %Y, %H:%M')}<br/>{labels['birth']}: {request.birth_datetime.strftime('%d %b %Y, %H:%M')} - {escape(request.timezone)}", styles["cover_body"]), Spacer(1, 8 * mm), KundliWheel(kundli_data["divisional_charts"]["D1"]), Spacer(1, 4 * mm), PageBreak(), Paragraph(labels["chart"], styles["section"]), Paragraph(f"Ascendant: <b>{chart.ascendant.sign}</b> - {chart.ascendant.longitude:.2f} degrees - {chart.ascendant.nakshatra}", styles["body"]), Spacer(1, 4 * mm)]
     planet_rows = [["Body", "Sign", "House", "Longitude"]] + [[body["name"], body["sign"], str(body.get("house", "-")), f"{float(body['longitude']):.2f} degrees"] for body in kundli_data["bodies"]]
     story += [_table(planet_rows, [35 * mm, 42 * mm, 30 * mm, 50 * mm], request.language), PageBreak(), Paragraph(labels["nakshatra"], styles["section"])]
     moon = nakshatra["moon"]
@@ -157,5 +181,5 @@ def premium_report(request: PremiumReportRequest, settings: Settings) -> bytes:
     story += [_table(dasha_rows, [48 * mm, 53 * mm, 53 * mm], request.language), Spacer(1, 7 * mm), Paragraph(labels["jaimini"], styles["section"])]
     karaka_rows = [["Karaka", "Planet", "Sign"]] + [[item["karaka"], item["planet"], item["sign"]] for item in jaimini_data["chara_karakas"]]
     story += [_table(karaka_rows, [55 * mm, 52 * mm, 47 * mm], request.language), Spacer(1, 7 * mm), Paragraph(labels["varshaphal"], styles["section"]), Paragraph(f"Year: <b>{varsha['year']}</b><br/>Varsha Pravesh ascendant: <b>{varsha['varsha_pravesh']['ascendant_sign']}</b><br/>Muntha: <b>{varsha['muntha']['sign']}</b> - {varsha['muntha']['lord']}<br/>Varshesha: <b>{varsha['varshesha']['planet']}</b>", styles["body"]), Spacer(1, 8 * mm), Paragraph(labels["notice"], styles["muted"])]
-    document.build(story, onFirstPage=_page_decor, onLaterPages=_page_decor)
+    document.build(story, onFirstPage=_cover_decor, onLaterPages=_page_decor)
     return output.getvalue()
