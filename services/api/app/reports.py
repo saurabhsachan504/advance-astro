@@ -15,7 +15,9 @@ from reportlab.platypus import Flowable, PageBreak, Paragraph, SimpleDocTemplate
 from .advanced import gochar_dashboard, jaimini, kundli, varshaphal, vimshottari_dasha
 from .astrology import SIGNS, calculate_chart
 from .config import Settings
-from .schemas import DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, PremiumReportRequest, ReportRequest, VarshaphalRequest
+from .nakshatra import nakshatra_studio
+from .schemas import DashaRequest, GocharDashboardRequest, JaiminiRequest, KundliRequest, NakshatraRequest, PremiumReportRequest, ReportRequest, VarshaphalRequest, YogaDoshaRequest
+from .yoga import yoga_dosha_analyzer
 
 
 INK = HexColor("#17243a")
@@ -83,9 +85,10 @@ def _styles(language: str) -> dict[str, ParagraphStyle]:
     }
 
 
-def _table(rows: list[list[str]], widths: list[float]) -> Table:
+def _table(rows: list[list[str]], widths: list[float], language: str = "en") -> Table:
     table = Table(rows, colWidths=widths, repeatRows=1, hAlign="LEFT")
-    table.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), INK), ("TEXTCOLOR", (0, 0), (-1, 0), PAPER), ("TEXTCOLOR", (0, 1), (-1, -1), INK), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [PAPER, MIST]), ("GRID", (0, 0), (-1, -1), .3, HexColor("#d7c5ad")), ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTNAME", (0, 1), (-1, -1), "Helvetica"), ("FONTSIZE", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+    family = _font_name(language)
+    table.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, 0), INK), ("TEXTCOLOR", (0, 0), (-1, 0), PAPER), ("TEXTCOLOR", (0, 1), (-1, -1), INK), ("ROWBACKGROUNDS", (0, 1), (-1, -1), [PAPER, MIST]), ("GRID", (0, 0), (-1, -1), .3, HexColor("#d7c5ad")), ("FONTNAME", (0, 0), (-1, 0), family), ("FONTNAME", (0, 1), (-1, -1), family), ("FONTSIZE", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 6), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
     return table
 
 
@@ -110,6 +113,12 @@ def chart_report(request: ReportRequest, settings: Settings) -> bytes:
 def premium_report(request: PremiumReportRequest, settings: Settings) -> bytes:
     """Build a factual, branded report from the app's deterministic engines."""
     labels, styles = _localisation(request.language), _styles(request.language)
+    labels.update({
+        "nakshatra": "नक्षत्र एवं पाद" if request.language == "hi" else "Nakshatra & Pada",
+        "yoga_dosha": "योग एवं दोष विश्लेषण" if request.language == "hi" else "Yoga & Dosha analysis",
+        "yoga": "योग संकेत" if request.language == "hi" else "Yoga signals",
+        "dosha": "दोष जाँच" if request.language == "hi" else "Dosha screening",
+    })
     base = request.model_dump(exclude={"report_title", "profile_name", "language", "gochar_range_days", "varshaphal_year"})
     chart = calculate_chart(request, settings)
     kundli_data = kundli(KundliRequest(**base), settings)
@@ -117,21 +126,36 @@ def premium_report(request: PremiumReportRequest, settings: Settings) -> bytes:
     dasha = vimshottari_dasha(DashaRequest(**base, years=20), settings)
     jaimini_data = jaimini(JaiminiRequest(**base, years=72), settings)
     varsha = varshaphal(VarshaphalRequest(**base, year=request.varshaphal_year or datetime.now().year), settings)
+    nakshatra = nakshatra_studio(NakshatraRequest(**base), settings)
+    yoga_dosha = yoga_dosha_analyzer(YogaDoshaRequest(**base), settings)
     output = BytesIO()
     document = SimpleDocTemplate(output, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=20 * mm, bottomMargin=18 * mm, title=request.report_title, author="VEDA / OS")
     story = [Paragraph(labels["private"].upper(), styles["eyebrow"]), Paragraph(escape(request.report_title), styles["title"]), Paragraph(f"{labels['profile']}: <b>{escape(request.profile_name)}</b><br/>{labels['generated']}: {datetime.now().strftime('%d %b %Y, %H:%M')}<br/>{labels['birth']}: {request.birth_datetime.strftime('%d %b %Y, %H:%M')} - {escape(request.timezone)}", styles["body"]), Spacer(1, 6 * mm), KundliWheel(kundli_data["divisional_charts"]["D1"]), Spacer(1, 4 * mm), Paragraph(labels["chart"], styles["section"]), Paragraph(f"Ascendant: <b>{chart.ascendant.sign}</b> - {chart.ascendant.longitude:.2f} degrees - {chart.ascendant.nakshatra}", styles["body"]), Spacer(1, 4 * mm)]
     planet_rows = [["Body", "Sign", "House", "Longitude"]] + [[body["name"], body["sign"], str(body.get("house", "-")), f"{float(body['longitude']):.2f} degrees"] for body in kundli_data["bodies"]]
-    story += [_table(planet_rows, [35 * mm, 42 * mm, 30 * mm, 50 * mm]), PageBreak(), Paragraph(labels["gochar"], styles["section"])]
+    story += [_table(planet_rows, [35 * mm, 42 * mm, 30 * mm, 50 * mm], request.language), PageBreak(), Paragraph(labels["nakshatra"], styles["section"])]
+    moon = nakshatra["moon"]
+    story += [Paragraph(f"Moon: <b>{moon['nakshatra']}</b> - Pada {moon['pada']} - {moon['lord']} - {moon['deity']}", styles["body"]), Spacer(1, 4 * mm)]
+    nakshatra_rows = [["Planet", "Sign", "Nakshatra", "Pada", "Lord", "Deity"]] + [[item["planet"], item["sign"], item["nakshatra"], str(item["pada"]), item["lord"], item["deity"]] for item in nakshatra["planets"]]
+    story += [_table(nakshatra_rows, [25 * mm, 27 * mm, 31 * mm, 17 * mm, 24 * mm, 30 * mm], request.language), Spacer(1, 7 * mm), Paragraph(labels["yoga_dosha"], styles["section"])]
+    for group, label in (("yogas", labels["yoga"]), ("doshas", labels["dosha"])):
+        rows = yoga_dosha[group]
+        story.append(Paragraph(label, styles["eyebrow"]))
+        if rows:
+            for item in rows:
+                story += [Paragraph(f"<b>{escape(item['name'])}</b> - {escape(item['status'])}<br/>{escape(item['rule'])}", styles["body"]), Spacer(1, 2 * mm)]
+        else:
+            story.append(Paragraph("No configured result was detected in this compact rule set.", styles["muted"]))
+    story += [Spacer(1, 4 * mm), Paragraph(escape(yoga_dosha["notice"]), styles["muted"]), PageBreak(), Paragraph(labels["gochar"], styles["section"])]
     current, sade = gochar["current"], gochar["current"]["sade_sati"]
     retrogrades = ", ".join(item["name"] for item in gochar["retrograde_planets"]) or "None"
     story += [Paragraph(f"Sade Sati: <b>{sade['phase']}</b> - Natal Moon {sade['natal_moon_sign']}; transit Saturn {sade['transit_saturn_sign']}.<br/>Retrogrades now: <b>{retrogrades}</b>.", styles["body"]), Spacer(1, 4 * mm)]
     daily_rows = [["Date", "Moon", "House", "Sade Sati"]] + [[day["date"], day["moon_sign"], str(day["moon_house_from_lagna"]), day["sade_sati_phase"]] for day in gochar["daily_overview"]]
-    story += [_table(daily_rows, [35 * mm, 42 * mm, 28 * mm, 52 * mm]), Spacer(1, 6 * mm), Paragraph("Upcoming sign changes", styles["section"])]
+    story += [_table(daily_rows, [35 * mm, 42 * mm, 28 * mm, 52 * mm], request.language), Spacer(1, 6 * mm), Paragraph("Upcoming sign changes", styles["section"])]
     ingress_rows = [["Planet", "From", "To", "Detected local time"]] + [[event["planet"], event["from_sign"], event["to_sign"], event["detected_local_datetime"][:16].replace("T", " ")] for event in gochar["upcoming_ingresses"][:16]]
-    story += [_table(ingress_rows, [30 * mm, 36 * mm, 36 * mm, 55 * mm]), PageBreak(), Paragraph(labels["dasha"], styles["section"])]
+    story += [_table(ingress_rows, [30 * mm, 36 * mm, 36 * mm, 55 * mm], request.language), PageBreak(), Paragraph(labels["dasha"], styles["section"])]
     dasha_rows = [["Maha Dasha", "Start", "End"]] + [[period["lord"], period["start"][:10], period["end"][:10]] for period in dasha["periods"]]
-    story += [_table(dasha_rows, [48 * mm, 53 * mm, 53 * mm]), Spacer(1, 7 * mm), Paragraph(labels["jaimini"], styles["section"])]
+    story += [_table(dasha_rows, [48 * mm, 53 * mm, 53 * mm], request.language), Spacer(1, 7 * mm), Paragraph(labels["jaimini"], styles["section"])]
     karaka_rows = [["Karaka", "Planet", "Sign"]] + [[item["karaka"], item["planet"], item["sign"]] for item in jaimini_data["chara_karakas"]]
-    story += [_table(karaka_rows, [55 * mm, 52 * mm, 47 * mm]), Spacer(1, 7 * mm), Paragraph(labels["varshaphal"], styles["section"]), Paragraph(f"Year: <b>{varsha['year']}</b><br/>Varsha Pravesh ascendant: <b>{varsha['varsha_pravesh']['ascendant_sign']}</b><br/>Muntha: <b>{varsha['muntha']['sign']}</b> - {varsha['muntha']['lord']}<br/>Varshesha: <b>{varsha['varshesha']['planet']}</b>", styles["body"]), Spacer(1, 8 * mm), Paragraph(labels["notice"], styles["muted"])]
+    story += [_table(karaka_rows, [55 * mm, 52 * mm, 47 * mm], request.language), Spacer(1, 7 * mm), Paragraph(labels["varshaphal"], styles["section"]), Paragraph(f"Year: <b>{varsha['year']}</b><br/>Varsha Pravesh ascendant: <b>{varsha['varsha_pravesh']['ascendant_sign']}</b><br/>Muntha: <b>{varsha['muntha']['sign']}</b> - {varsha['muntha']['lord']}<br/>Varshesha: <b>{varsha['varshesha']['planet']}</b>", styles["body"]), Spacer(1, 8 * mm), Paragraph(labels["notice"], styles["muted"])]
     document.build(story, onFirstPage=_page_decor, onLaterPages=_page_decor)
     return output.getvalue()
