@@ -89,6 +89,9 @@ class NumerologyRequest(ChartRequest):
 class AstrocartographyRequest(ChartRequest):
     pass
 
+class NakshatraRequest(ChartRequest):
+    pass
+
 
 class VarshaphalRequest(ChartRequest):
     year: int | None = Field(default=None, ge=1900, le=2200)
