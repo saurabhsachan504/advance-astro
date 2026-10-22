@@ -27,6 +27,7 @@ import "./kundli-north-traditional.css";
 import "./kundli-wheel-subtitle.css";
 import "./astrocartography-map-fix.css";
 import "./astrocartography-label-contrast.css";
+import "./yoga-dosha.css";
 import LanguageToggle from "./language-toggle";
 import LocationSearch from "./location-search";
 

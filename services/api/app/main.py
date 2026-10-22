@@ -9,10 +9,11 @@ from .database import Base, engine
 from .feedback import create_forecast, dispatch_due_followups, record_feedback
 from .locations import search_locations
 from .nakshatra import nakshatra_studio
+from .yoga import yoga_dosha_analyzer
 from .privacy import create_upload_intent
 from .rag import ingest_chunk, retrieve
 from .reports import chart_report, premium_report
-from .schemas import AstrocartographyRequest, CalendarMonthRequest, CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KPRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, NakshatraRequest, NumerologyRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TimelineRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest
+from .schemas import AstrocartographyRequest, CalendarMonthRequest, CalendarRequest, ChartRequest, ChartResponse, DashaRequest, FeedbackCreate, ForecastCreate, ForecastResponse, GocharDashboardRequest, JaiminiRequest, KPRequest, KnowledgeChunkCreate, KnowledgeSearch, KundliRequest, MatchmakingRequest, MuhuratRequest, NakshatraRequest, NumerologyRequest, PrashnaRequest, PremiumReportRequest, ReportRequest, TimelineRequest, TransitRequest, UploadIntentRequest, VarshaphalRequest, YogaDoshaRequest
 from .studios import astrocartography, numerology
 from .timeline import dasha_gochar_timeline
 from .vision import interpret_symbolic_image
@@ -56,6 +57,10 @@ def calculate_all_systems(request: ChartRequest) -> dict:
 @app.post("/v1/nakshatra/analyse")
 def analyse_nakshatra(request: NakshatraRequest) -> dict:
     return nakshatra_studio(request, settings)
+
+@app.post("/v1/yoga-dosha/analyse")
+def analyse_yoga_dosha(request: YogaDoshaRequest) -> dict:
+    return yoga_dosha_analyzer(request, settings)
 
 @app.post("/v1/numerology/analyse")
 def analyse_numerology(request: NumerologyRequest) -> dict:

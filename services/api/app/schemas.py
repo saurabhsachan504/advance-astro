@@ -92,6 +92,9 @@ class AstrocartographyRequest(ChartRequest):
 class NakshatraRequest(ChartRequest):
     pass
 
+class YogaDoshaRequest(ChartRequest):
+    pass
+
 
 class VarshaphalRequest(ChartRequest):
     year: int | None = Field(default=None, ge=1900, le=2200)

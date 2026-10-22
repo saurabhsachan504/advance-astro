@@ -3,6 +3,7 @@
 import { Component, FormEvent, ReactNode, useEffect, useRef, useState } from "react";
 import Timeline from "./timeline";
 import Nakshatra from "./nakshatra";
+import YogaDosha from "./yoga-dosha";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || "";
 type Data = Record<string, unknown>;
@@ -25,6 +26,7 @@ const tools = [
   ["astrocartography", "Astrocartography Map", "Planetary MC, IC, rising and setting lines"],
   ["timeline", "Dasha + Gochar Timeline", "Dasha changes, retrogrades and sign ingresses"],
   ["nakshatra", "Nakshatra & Pada Studio", "Moon Nakshatra, Pada, deity and planet lords"],
+  ["yoga", "Yoga & Dosha Analyzer", "Classical yoga, Manglik and Kaal Sarp screening"],
 ] as const;
 
 export default function ProAdvancedTools() {
@@ -53,6 +55,7 @@ export default function ProAdvancedTools() {
     if (kind === "astrocartography") { path = "/astrocartography/map"; }
     if (kind === "timeline") { path = "/timeline/dasha-gochar"; payload = { ...base, range_days: window.confirm("Show 30 days? Select Cancel for 7 days.") ? 30 : 7 }; }
     if (kind === "nakshatra") { path = "/nakshatra/analyse"; }
+    if (kind === "yoga") { path = "/yoga-dosha/analyse"; }
     if (kind === "prashna") { path = "/prashna/calculate"; payload = { question: formData.get("question") || "What should I understand from this moment?", question_datetime: localMoment(String(base.timezone)), timezone: base.timezone, latitude: base.latitude, longitude: base.longitude }; }
     if (kind === "match") { path = "/matchmaking/analyse"; payload = { person_a: base, person_b: { birth_datetime: formData.get("match_birth_datetime"), timezone: formData.get("match_timezone"), latitude: Number(formData.get("match_latitude")), longitude: Number(formData.get("match_longitude")), ayanamsa: "lahiri" }, person_a_label: "Profile A", person_b_label: "Profile B" }; }
     try {
@@ -87,6 +90,7 @@ function Result({ result, active }: { result: Data; active: string }) {
   if (active === "astrocartography") return <AstrocartographyMap result={result}/>;
   if (active === "timeline") return <Timeline result={result}/>;
   if (active === "nakshatra") return <Nakshatra result={result}/>;
+  if (active === "yoga") return <YogaDosha result={result}/>;
   if (active === "calendar") return <PanchangCalendar initial={result}/>;
   if (active === "kundli") return <VisualKundli result={result}/>;
   return <pre className="pro-json">{JSON.stringify(result, null, 2)}</pre>;

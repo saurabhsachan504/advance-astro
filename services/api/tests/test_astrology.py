@@ -2,10 +2,11 @@ from datetime import date, datetime
 from app.astrology import PLANETS, calculate_chart, calculate_multi_system
 from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kp_studio, kundli, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
 from app.studios import astrocartography, numerology
+from app.yoga import yoga_dosha_analyzer
 from app.config import Settings
 from app.reports import premium_report
 from app.locations import normalise_locations
-from app.schemas import AstrocartographyRequest, CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, NumerologyRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest
+from app.schemas import AstrocartographyRequest, CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, NumerologyRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest, YogaDoshaRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -139,4 +140,12 @@ def test_numerology_and_astrocartography_return_traceable_studios(tmp_path):
     assert len(world_map["lines"]) == len(PLANETS) * 4
     assert {line["angle"] for line in world_map["lines"]} == {"MC", "IC", "ASC", "DSC"}
     assert all(-180 <= point[0] <= 180 for line in world_map["lines"] for point in line["coordinates"])
+
+
+def test_yoga_dosha_returns_transparent_screening_rules(tmp_path):
+    common = dict(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
+    result = yoga_dosha_analyzer(YogaDoshaRequest(**common), Settings(ephemeris_path=tmp_path))
+    assert result["chart_basis"]["ayanamsa"] == "Lahiri sidereal"
+    assert result["doshas"]
+    assert all({"name", "status", "rule"}.issubset(row) for row in [*result["yogas"], *result["doshas"]])
 
