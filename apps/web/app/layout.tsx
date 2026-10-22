@@ -25,6 +25,7 @@ import "./kundli-north-size.css";
 import "./kundli-traditional-themes.css";
 import "./kundli-north-traditional.css";
 import "./kundli-wheel-subtitle.css";
+import "./astrocartography-map-fix.css";
 import LanguageToggle from "./language-toggle";
 import LocationSearch from "./location-search";
 
