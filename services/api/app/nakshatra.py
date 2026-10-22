@@ -5,5 +5,5 @@ DEITIES=["Ashwini Kumara","Yama","Agni","Brahma","Soma","Rudra","Aditi","Brihasp
 def nakshatra_studio(request:NakshatraRequest,settings:Settings)->dict:
  _,jd=_utc_and_jd(request,settings); span=360/27; rows=[]
  for p in _positions(jd,True):
-  i=min(26,int(p.longitude/span)); rows.append({"planet":p.name,"sign":p.sign,"nakshatra":NAKSHATRAS[i],"pada":min(4,int((p.longitude%span)/(span/4))+1),"lord":VIMSHOTTARI_LORDS[i],"deity":DEITIES[i]})
+  i=min(26,int(p.longitude/span)); rows.append({"planet":p.name,"sign":p.sign,"nakshatra":NAKSHATRAS[i],"pada":min(4,int((p.longitude%span)/(span/4))+1),"lord":VIMSHOTTARI_LORDS[i % len(VIMSHOTTARI_LORDS)],"deity":DEITIES[i]})
  return {"system":"Lahiri sidereal Nakshatra","moon":next(x for x in rows if x["planet"]=="Moon"),"planets":rows,"notice":"Nakshatra and Pada values are calculated from sidereal longitudes; traditional labels are reference data, not guaranteed outcomes."}

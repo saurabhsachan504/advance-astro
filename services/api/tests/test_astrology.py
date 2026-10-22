@@ -2,11 +2,12 @@ from datetime import date, datetime
 from app.astrology import PLANETS, calculate_chart, calculate_multi_system
 from app.advanced import BAV_EXPECTED_TOTALS, gochar, gochar_dashboard, jaimini, kp_studio, kundli, panchang_month, prashna, strengths, varshaphal, vimshottari_dasha
 from app.studios import astrocartography, numerology
+from app.nakshatra import nakshatra_studio
 from app.yoga import yoga_dosha_analyzer
 from app.config import Settings
 from app.reports import premium_report
 from app.locations import normalise_locations
-from app.schemas import AstrocartographyRequest, CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, NumerologyRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest, YogaDoshaRequest
+from app.schemas import AstrocartographyRequest, CalendarMonthRequest, ChartRequest, DashaRequest, GocharDashboardRequest, JaiminiRequest, KPRequest, KundliRequest, NakshatraRequest, NumerologyRequest, PremiumReportRequest, PrashnaRequest, TransitRequest, VarshaphalRequest, YogaDoshaRequest
 
 def test_chart_has_all_v1_bodies_and_valid_longitudes(tmp_path):
     request = ChartRequest(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
@@ -148,4 +149,12 @@ def test_yoga_dosha_returns_transparent_screening_rules(tmp_path):
     assert result["chart_basis"]["ayanamsa"] == "Lahiri sidereal"
     assert result["doshas"]
     assert all({"name", "status", "rule"}.issubset(row) for row in [*result["yogas"], *result["doshas"]])
+
+
+def test_nakshatra_studio_cycles_vimshottari_lords_for_all_27_nakshatras(tmp_path):
+    common = dict(birth_datetime=datetime(1995, 8, 15, 10, 30), timezone="Asia/Kolkata", latitude=28.6139, longitude=77.2090)
+    result = nakshatra_studio(NakshatraRequest(**common), Settings(ephemeris_path=tmp_path))
+    assert len(result["planets"]) == 9
+    assert result["moon"]["lord"]
+    assert all(row["lord"] in {"Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury"} for row in result["planets"])
 
